@@ -1,0 +1,2666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>药材鉴定</title>
+<style>
+/* =============================================
+   重置与根变量
+   ============================================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* 手机外壳 */
+  --shell:#1A1A1E;
+  /* 背景层级 */
+  --bg-primary:#EDEDED;--bg-secondary:#F2F2F7;--bg-tertiary:#E5E5EA;
+  /* 文字层级（基于 #3C3C43 的 iOS 风格透明度） */
+  --txt-primary:#1C1C1E;--txt-secondary:rgba(60,60,67,0.6);--txt-tertiary:rgba(60,60,67,0.3);
+  /* 强调色 */
+  --green:#34C759;--green-dark:#28A745;--blue:#007AFF;--blue-dark:#0056CC;
+  --orange:#FF9500;--orange-shop:#FF6600;--red:#FF3B30;--red-dark:#E53935;
+  --teal:#10B981;
+  /* 语义标记 */
+  --white:#FFF;--gray:#8E8E93;--gray2:#AEAEB2;
+  --gray4:#E5E5EA;--gray5:#F2F2F7;
+  /* 链接/提及颜色（微信蓝） */
+  --link:#576B95;
+  /* 间距尺度（8px 网格） */
+  --sp-xxs:4px;--sp-xs:8px;--sp-sm:12px;--sp-md:16px;--sp-lg:20px;--sp-xl:24px;--sp-xxl:32px;
+  /* 圆角 */
+  --r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;
+  /* 阴影 — iOS 18 风格：柔和多层 */
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.04),0 1px 3px rgba(0,0,0,0.06);
+  --shadow-lg:0 12px 40px rgba(0,0,0,0.08),0 2px 8px rgba(0,0,0,0.04);
+  --shadow-modal:0 24px 80px rgba(0,0,0,0.18),0 4px 16px rgba(0,0,0,0.06);
+  /* 玻璃边框 */
+  --glass-border:0.5px solid rgba(255,255,255,0.45);
+  /* 导航栏高度 */
+  --nav-h:44px;
+}
+html,body{
+  height:100%;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",sans-serif;
+  font-size:14px;color:var(--txt-primary);background:#0d0d12;
+  display:flex;justify-content:center;align-items:flex-start;
+  -webkit-tap-highlight-color:transparent;user-select:none
+}
+
+/* ============================================
+   手机外壳
+   ============================================ */
+#phone-shell{
+  width:420px;height:812px;background:var(--shell);
+  border-radius:48px;padding:6px 6px 10px 6px;position:relative;
+  transform-origin:top center;
+  box-shadow:0 0 0 2px #2a2a30,0 20px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.05)
+}
+#screen-bezel{
+  width:100%;height:100%;background:#000;border-radius:36px;overflow:hidden;
+  position:relative;display:flex;flex-direction:column
+}
+
+/* ============================================
+   灵动岛与状态栏
+   ============================================ */
+#island{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:130px;height:30px;background:#000;border-radius:18px;z-index:50;
+  display:flex;align-items:center;justify-content:flex-end;padding:0 12px;gap:8px
+}
+#island .dot{width:5px;height:5px;border-radius:50%;background:#1a1a2e}
+#status-bar{
+  height:44px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;font-size:15px;font-weight:600;flex-shrink:0;
+  color:#FFF;position:relative;z-index:40
+}
+#status-bar .time{font-weight:600;letter-spacing:0.3px}
+#status-bar .icons{display:flex;align-items:center;gap:6px;font-size:12px;opacity:0.9}
+.sig{display:flex;gap:1.5px;align-items:flex-end}
+.sig span{width:3px;background:#FFF;border-radius:1px}
+.sig span:nth-child(1){height:4px}.sig span:nth-child(2){height:6px}
+.sig span:nth-child(3){height:8px}.sig span:nth-child(4){height:10px}
+.bat{width:24px;height:12px;border:1.5px solid rgba(255,255,255,0.85);border-radius:3px;position:relative;padding:2px}
+.bat::after{content:'';position:absolute;right:-3.5px;top:3px;width:2.5px;height:5px;background:rgba(255,255,255,0.85);border-radius:0 1px 1px 0}
+.bat-fill{height:100%;background:#FFF;border-radius:1px;width:75%}
+
+/* ============================================
+   主屏幕
+   ============================================ */
+#main-screen{flex:1;position:relative;overflow:hidden}
+
+/* ============================================
+   桌面页
+   ============================================ */
+#desktop{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(160deg,#0f0c29 0%,#302b63 40%,#24243e 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding-top:60px;z-index:1
+}
+/* 细微网格纹理 */
+#desktop::before{
+  content:'';position:absolute;inset:0;opacity:0.06;
+  background-image:radial-gradient(rgba(255,255,255,0.4) 1px,transparent 1px);
+  background-size:28px 28px
+}
+/* 时间与日期 */
+#desk-time{font-size:48px;font-weight:250;color:#FFF;position:relative;z-index:1}
+#desk-date{font-size:14px;color:rgba(255,255,255,0.55);margin-top:2px;position:relative;z-index:1}
+
+/* 应用网格 — 4列，iPhone 风格 */
+#app-grid{
+  display:grid;grid-template-columns:repeat(4,60px);
+  gap:28px 20px;margin-top:40px;position:relative;z-index:1;
+  justify-content:center
+}
+.desk-icon{
+  width:60px;height:60px;border-radius:15px;cursor:pointer;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,0.2),0 1px 3px rgba(0,0,0,0.15);
+  transition:transform 0.15s ease
+}
+.desk-icon:active{transform:scale(0.92)}
+
+.desk-icon .icon-label{
+  position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:#FFF;white-space:nowrap;font-weight:400;
+  max-width:80px;overflow:hidden;text-overflow:ellipsis
+}
+
+/* 桌面图标角标 */
+.desk-badge{
+  position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;
+  display:none;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#FFF;padding:0 6px;z-index:2
+}
+.desk-badge.red{display:flex;background:var(--red)}
+.desk-badge.green{display:flex;background:var(--green)}
+.desk-dot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:var(--orange);display:none;z-index:2}
+.desk-dot.show{display:block}
+/* 聊天图标脉冲动画 */
+@keyframes pulseHint{0%,100%{box-shadow:0 4px 12px rgba(0,0,0,0.25)}50%{box-shadow:0 4px 12px rgba(0,0,0,0.25),0 0 20px rgba(52,199,89,0.5);transform:scale(1.05)}}
+.desk-icon.pulse{animation:pulseHint 2s ease-in-out 3}
+.desk-icon.highlight{border:2px solid rgba(255,165,0,0.3)}
+
+/* 底部导航栏 */
+#dock-bar{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  width:86%;height:84px;border-radius:32px;z-index:2;
+  background:rgba(255,255,255,0.10);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  border:0.5px solid rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:space-evenly;padding:0 10px
+}
+.dock-icon{
+  width:48px;height:48px;border-radius:12px;cursor:pointer;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.2);
+  transition:transform 0.15s ease
+}
+.dock-icon:active{transform:scale(0.9)}
+.dock-dot{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--orange);display:none}
+.dock-dot.show{display:block}
+
+/* 应用图标颜色 */
+.icon-chat{background:linear-gradient(135deg,#34C759,#28A745)}
+.icon-shua{background:linear-gradient(135deg,#2C2C2E,#1A1A1A)}
+.icon-tao{background:linear-gradient(135deg,#FF8C00,#FF6600)}
+.icon-you{background:linear-gradient(135deg,#3B82F6,#2563EB)}
+.icon-lin{background:linear-gradient(135deg,#10B981,#059669)}
+
+/* CSS 图标形状 */
+.icon-chat::before{content:'';width:25px;height:19px;background:#FFF;border-radius:5px;position:relative}
+.icon-chat::after{content:'';position:absolute;bottom:7px;left:14px;width:0;height:0;border-left:6px solid #FFF;border-top:6px solid transparent;border-bottom:6px solid transparent;display:none}
+.dock-icon.icon-chat::before{width:18px;height:14px;border-radius:4px}
+.icon-shua::before{content:'';width:0;height:0;border-left:14px solid #FFF;border-top:8px solid transparent;border-bottom:8px solid transparent}
+.dock-icon.icon-shua::before{border-left-width:10px;border-top-width:6px;border-bottom-width:6px}
+.icon-tao::before{content:'';width:19px;height:16px;border:2px solid #FFF;border-radius:3px 3px 6px 6px}
+.icon-tao::after{content:'';position:absolute;top:6px;left:10px;width:11px;height:5px;border:2px solid #FFF;border-bottom:none;border-radius:5px 5px 0 0}
+.dock-icon.icon-tao::before{width:14px;height:12px}
+.dock-icon.icon-tao::after{top:12px;left:16px;width:8px;height:5px}
+.icon-you::before{content:'';width:19px;height:14px;border:2px solid #FFF;border-radius:5px}
+.icon-you::after{content:'';position:absolute;width:5px;height:5px;border:1.5px solid #FFF;border-radius:50%;top:15px;left:18px}
+.dock-icon.icon-you::before{width:14px;height:10px;border-radius:4px}
+.dock-icon.icon-you::after{width:4px;height:4px;top:30px;left:21px}
+.icon-lin::before{content:'';width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:14px solid #FFF}
+.icon-lin::after{content:'';position:absolute;width:16px;height:11px;background:#FFF;border-radius:2px;bottom:9px}
+.dock-icon.icon-lin::before{border-left-width:8px;border-right-width:8px;border-bottom-width:10px}
+.dock-icon.icon-lin::after{width:12px;height:8px;border-radius:1px;bottom:16px}
+
+/* ============================================
+   应用页面（共用）
+   ============================================ */
+.app-page{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(180deg,#F2F2F7 0%,#E8E8ED 100%);
+  display:none;flex-direction:column;z-index:10
+}
+.app-page.show{display:flex}
+.app-nav{
+  height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;flex-shrink:0;
+  background:rgba(242,242,247,0.78);backdrop-filter:blur(32px) saturate(2.0);-webkit-backdrop-filter:blur(32px) saturate(2.0);
+  border-bottom:0.33px solid rgba(0,0,0,0.08)
+}
+.app-nav .nav-back{
+  font-size:14px;cursor:pointer;color:var(--blue);padding:4px 8px;border-radius:6px;
+  display:flex;align-items:center;gap:2px;transition:background 0.15s
+}
+.app-nav .nav-back:active{background:rgba(0,122,255,0.08)}
+.app-nav .nav-back svg{width:18px;height:18px;fill:var(--blue)}
+.app-nav .nav-title{font-size:17px;font-weight:600;color:var(--txt-primary);letter-spacing:-0.02em}
+.app-nav .nav-opt{font-size:18px;color:var(--gray)}
+.app-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+.app-body::-webkit-scrollbar{display:none}
+#chat-body::-webkit-scrollbar{width:4px}
+#chat-body::-webkit-scrollbar-track{background:transparent}
+#chat-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:2px}
+/* 应用提示浮层 */
+.app-toast{position:relative;z-index:5;background:rgba(0,0,0,0.68);backdrop-filter:blur(16px) saturate(1.8);-webkit-backdrop-filter:blur(16px) saturate(1.8);color:#FFF;font-size:13px;line-height:1.6;padding:10px 14px;margin:8px 16px 0 16px;border-radius:12px;opacity:1;transition:opacity 0.5s ease}
+.app-toast.fade{opacity:0}
+
+/* ============================================
+   聊天应用（聊养圈）
+   ============================================ */
+.msg-row{display:flex;flex-direction:column;margin-bottom:14px}
+.msg-row .msg-sender{font-size:11px;color:var(--gray);margin-bottom:2px;padding:0 4px}
+.msg-row.other{align-items:flex-start}
+.msg-row.other .msg-bubble{
+  background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:4px 16px 16px 16px;
+  padding:12px 15px;max-width:80%;font-size:14px;line-height:1.55;
+  box-shadow:var(--shadow-xs);word-break:break-word
+}
+.msg-row.self{align-items:flex-end}
+.msg-row.self .msg-bubble{
+  background:linear-gradient(135deg,#95EC69,#5BD825);border-radius:16px 4px 16px 16px;
+  padding:12px 15px;max-width:80%;font-size:14px;line-height:1.55;
+  box-shadow:var(--shadow-xs);word-break:break-word;color:#111
+}
+.msg-row.system{align-items:center}
+.msg-row.system .msg-bubble{
+  background:transparent;padding:4px 10px;max-width:90%;font-size:11px;color:var(--gray);text-align:center
+}
+
+/* 聊天中的药材卡片 */
+.herb-card{
+  background:rgba(255,255,255,0.85);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);
+  border-radius:var(--r-lg);padding:16px;margin-top:4px;
+  box-shadow:var(--shadow-md);border:var(--glass-border)
+}
+.herb-card .hc-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.herb-card .hc-img{
+  width:56px;height:56px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(135deg,#F5F0E8,#EDE4D4)
+}
+.herb-card .hc-img img{width:100%;height:100%;object-fit:cover}
+.herb-card .hc-name{font-size:16px;font-weight:600;color:var(--txt-primary);letter-spacing:-0.01em}
+.herb-card .hc-desc{font-size:12px;color:var(--txt-secondary);line-height:1.5;margin-top:4px}
+.herb-card .hc-tip{
+  margin-top:10px;padding:8px 12px;background:rgba(255,248,225,0.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-radius:var(--r-sm);font-size:12px;color:#856404;line-height:1.5
+}
+.hc-detail{
+  margin-top:10px;padding:10px 12px;background:rgba(52,199,89,0.06);border-left:3px solid #34C759;
+  border-radius:0 8px 8px 0
+}
+.hc-detail-title{font-size:11px;font-weight:600;color:#34C759;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em}
+.hc-detail-text{font-size:13px;color:#1C1C1E;line-height:1.6;font-weight:500}
+/* 卖家药材图片卡片 */
+.seller-card{background:rgba(255,255,255,0.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:var(--r-md);padding:12px;border:0.5px solid rgba(0,0,0,0.06);box-shadow:var(--shadow-xs)}
+.seller-card .sc-img{width:100%;height:auto;max-height:180px;overflow:hidden;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#F5F0E8,#EDE4D4)}
+.seller-card .sc-img img{width:100%;height:auto!important;max-height:180px;object-fit:contain!important;border-radius:8px}
+.seller-card .sc-text{font-size:13px;color:#3C3C43;line-height:1.5}
+/* 卖家信息栏 */
+#seller-info-bar{display:none;flex-shrink:0;padding:10px 12px;background:rgba(255,248,240,0.92);border-bottom:1px solid #F0E0D0}
+#seller-info-bar .sib-inner{display:flex;align-items:center;gap:10px}
+#seller-info-bar .sib-img{width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#F5F0E8,#EDE4D4);display:flex;align-items:center;justify-content:center}
+#seller-info-bar .sib-img img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+#seller-info-bar .sib-content{flex:1;min-width:0}
+#seller-info-bar .sib-name{font-size:14px;font-weight:600;color:#5D4E37;margin-bottom:2px}
+#seller-info-bar .sib-desc{font-size:12px;color:#8B7355;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#seller-info-bar .sib-badge{display:inline-block;font-size:10px;background:#FF9500;color:#fff;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+/* 聊天首次访问提示 */
+.chat-hint-bubble{background:rgba(232,244,253,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px;color:#1A6FC4;line-height:1.5}
+.chat-hint-sys{font-size:12px;color:#8E8E93;text-align:center;margin-top:6px;line-height:1.6}
+
+/* 聊天底部栏 */
+#chat-bottom{
+  flex-shrink:0;padding:10px 12px;background:rgba(242,242,247,0.82);
+  backdrop-filter:blur(32px) saturate(2.0);-webkit-backdrop-filter:blur(32px) saturate(2.0);
+  border-top:0.33px solid rgba(0,0,0,0.08)
+}
+#chat-clue-bar{
+  background:rgba(255,243,205,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-left:3px solid #FFC107;padding:8px 12px;border-radius:0 8px 8px 0;
+  font-size:12px;color:#856404;margin-bottom:6px;display:none;line-height:1.5
+}
+#chat-clue-bar.done{display:block;background:rgba(212,237,218,0.75);border-color:var(--green-dark);color:#155724}
+#chat-clue-bar.show{display:block}
+#chat-judge{
+  display:none;gap:8px;justify-content:center;margin-top:6px
+}
+#chat-judge.show{display:flex}
+#chat-judge button{
+  height:40px;padding:0 24px;border:none;border-radius:20px;font-size:14px;font-weight:600;
+  cursor:pointer;color:#FFF;box-shadow:0 3px 12px rgba(0,0,0,0.12);
+  transition:transform 0.12s ease,box-shadow 0.12s ease
+}
+#chat-judge button:active{transform:scale(0.96);box-shadow:0 1px 4px rgba(0,0,0,0.12)}
+#chat-judge button.btn-real{background:linear-gradient(135deg,#34C759,#28A745)}
+#chat-judge button.btn-fake{background:linear-gradient(135deg,#FF3B30,#E53935)}
+.judge-hint{font-size:14px;color:rgba(0,0,0,0.45);text-align:center;margin-bottom:6px;display:none}
+.judge-hint.show{display:block}
+#chat-input{
+  height:36px;background:rgba(255,255,255,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:18px;padding:0 16px;font-size:13px;
+  color:var(--gray2);line-height:36px;border:0.5px solid rgba(0,0,0,0.06)
+}
+
+/* ============================================
+   刷看 APP
+   ============================================ */
+.video-hero{
+  height:220px;display:flex;align-items:center;justify-content:center;
+  border-radius:14px;margin-bottom:14px;overflow:hidden;
+  background-size:cover;background-position:center;
+  background-color:#1a1a2e;
+  position:relative
+}
+.video-hero .v-play{
+  width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.25);
+  border:2px solid rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center
+}
+.video-hero .v-play::after{content:'';width:0;height:0;border-left:18px solid #FFF;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:3px}
+/* 视频播放器样式 — 基于 Canvas 播放 */
+.video-hero{cursor:pointer;position:relative}
+.video-hero .v-play{cursor:pointer;z-index:6}
+/* 播放时隐藏 CSS 播放按钮（Canvas 自行绘制界面） */
+.video-hero.playing .v-play{display:none}
+.video-hero.playing::after{content:none}
+
+/* 详情弹窗 */
+.detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:350}
+.detail-overlay.show{display:flex;animation:maskFadeIn 0.2s ease forwards}
+.detail-popup{background:rgba(255,255,255,0.92);backdrop-filter:blur(40px) saturate(2.0);-webkit-backdrop-filter:blur(40px) saturate(2.0);border-radius:var(--r-xl);padding:24px 20px;width:88%;max-width:340px;max-height:70vh;overflow-y:auto;box-shadow:var(--shadow-modal);border:var(--glass-border);animation:modalPopIn 0.35s ease forwards}
+.detail-popup h3{font-size:17px;font-weight:700;color:var(--txt-primary);margin-bottom:10px;text-align:center;letter-spacing:-0.01em}
+.detail-popup .dp-img{width:80px;height:80px;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,#F5F0E8,#EDE4D4)}
+.detail-popup .dp-img img{width:100%;height:100%;object-fit:cover}
+.detail-popup .dp-section{margin-bottom:12px;font-size:13px;line-height:1.7;color:var(--txt-secondary)}
+.detail-popup .dp-section b{color:var(--txt-primary);font-weight:600}
+.detail-popup .dp-tag{display:inline-block;background:#FFF3CD;color:#856404;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;margin-bottom:8px}
+.detail-popup .dp-close{display:block;margin:14px auto 0;height:38px;padding:0 28px;border:none;border-radius:19px;font-size:14px;font-weight:600;color:#FFF;background:linear-gradient(135deg,#007AFF,#0056CC);box-shadow:0 4px 12px rgba(0,122,255,0.25);cursor:pointer;transition:transform 0.12s ease}
+.detail-popup .dp-close:active{transform:scale(0.96)}
+.detail-popup::-webkit-scrollbar{display:none}
+
+/* 可点击卡片 */
+.herb-card,.shop-item,.group-card,.moment-card,.video-card{cursor:pointer;transition:transform 0.12s ease,box-shadow 0.12s ease}
+.herb-card:active,.shop-item:active,.group-card:active,.moment-card:active,.video-card:active{transform:scale(0.98);box-shadow:var(--shadow-xs)}
+.video-card{
+  background:rgba(255,255,255,0.82);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);
+  border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow-md);margin-bottom:10px;border:var(--glass-border)
+}
+.video-card h3{font-size:16px;font-weight:600;color:var(--txt-primary);margin-bottom:8px;line-height:1.4;letter-spacing:-0.01em}
+.video-card .vc-author{font-size:12px;color:var(--txt-secondary);margin-bottom:10px}
+.video-card p{font-size:13px;color:var(--txt-secondary);line-height:1.8}
+.video-card .vc-stats{display:flex;gap:16px;font-size:11px;color:var(--txt-tertiary);margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(0,0,0,0.06)}
+.video-comment{
+  background:rgba(248,248,248,0.65);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.7;color:var(--txt-secondary)
+}
+.video-comment b{color:var(--link);font-weight:500}
+
+/* ============================================
+   淘实惠 APP
+   ============================================ */
+.search-bar{
+  background:rgba(255,255,255,0.80);backdrop-filter:blur(16px) saturate(1.6);-webkit-backdrop-filter:blur(16px) saturate(1.6);
+  border-radius:22px;padding:10px 16px;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-tertiary);
+  box-shadow:var(--shadow-xs);border:0.5px solid rgba(255,255,255,0.4)
+}
+.shop-item{display:flex;gap:12px;background:rgba(255,255,255,0.82);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-md);border:var(--glass-border)}
+.shop-item .si-img{width:90px;height:90px;border-radius:12px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#F5F0E8,#EDE4D4);display:flex;align-items:center;justify-content:center}
+.shop-item .si-img img{width:100%;height:100%;object-fit:cover}
+.shop-item .si-info{flex:1;display:flex;flex-direction:column;justify-content:space-between}
+.shop-item .si-name{font-size:14px;font-weight:600;color:var(--txt-primary);line-height:1.35}
+.shop-item .si-price{font-size:20px;font-weight:700;color:var(--red-dark)}
+.shop-item .si-price .si-ori{font-size:11px;color:var(--txt-tertiary);text-decoration:line-through;margin-left:6px;font-weight:400}
+.shop-item .si-shop{font-size:10px;color:var(--txt-tertiary)}
+.shop-item .si-stars{font-size:13px;color:var(--orange);margin:2px 0}
+.shop-review{padding:10px 12px;background:rgba(242,242,247,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:var(--r-sm);margin-top:4px;font-size:11px;color:var(--txt-secondary);line-height:1.6}
+.shop-review b{color:var(--txt-secondary);margin-right:4px}
+
+/* ============================================
+   友圈 APP
+   ============================================ */
+.moment-card{background:rgba(255,255,255,0.82);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);border-radius:var(--r-lg);padding:16px;margin-bottom:10px;box-shadow:var(--shadow-md);border:var(--glass-border)}
+.moment-card .mc-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.moment-card .mc-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:#FFF;font-weight:600;flex-shrink:0}
+.moment-card .mc-avatar.a1{background:linear-gradient(135deg,#FF6B6B,#EE5A24)}
+.moment-card .mc-avatar.a2{background:linear-gradient(135deg,#54A0FF,#2E86DE)}
+.moment-card .mc-avatar.a3{background:linear-gradient(135deg,#5F27CD,#341F97)}
+.moment-card .mc-uname{font-size:14px;font-weight:600;color:var(--link)}
+.moment-card .mc-time{font-size:10px;color:var(--txt-tertiary);margin-top:1px}
+.moment-card .mc-text{font-size:13px;color:var(--txt-primary);line-height:1.8;margin-bottom:10px}
+.moment-card .mc-actions{display:flex;gap:24px;font-size:12px;color:var(--txt-tertiary)}
+.moment-comment{
+  margin-top:8px;padding:10px 12px;background:rgba(242,242,247,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:var(--r-sm);font-size:12px;line-height:1.6;color:var(--txt-secondary)
+}
+.moment-comment b{color:var(--link);font-weight:500}
+
+/* ============================================
+   邻聚 APP
+   ============================================ */
+.group-header{font-size:12px;color:var(--txt-secondary);margin-bottom:10px;padding:0 4px}
+.group-card{display:flex;gap:12px;background:rgba(255,255,255,0.82);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-md);border:var(--glass-border)}
+.group-card .gc-img{width:80px;height:80px;border-radius:12px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#F5F0E8,#EDE4D4);display:flex;align-items:center;justify-content:center}
+.group-card .gc-img img{width:100%;height:100%;object-fit:cover}
+.group-card .gc-info{flex:1}
+.group-card .gc-name{font-size:14px;font-weight:600;color:var(--txt-primary);margin-bottom:4px;line-height:1.35}
+.group-card .gc-price{font-size:18px;font-weight:700;color:var(--red-dark)}
+.group-card .gc-price .gc-ori{font-size:10px;color:var(--txt-tertiary);text-decoration:line-through;margin-left:4px;font-weight:400}
+.group-card .gc-meta{font-size:10px;color:var(--txt-tertiary);margin-top:4px;display:flex;gap:14px;flex-wrap:wrap}
+.group-card .gc-count{color:var(--red-dark);font-weight:600}
+.group-detail{background:rgba(255,255,255,0.75);backdrop-filter:blur(14px) saturate(1.6);-webkit-backdrop-filter:blur(14px) saturate(1.6);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--txt-secondary);line-height:1.7;margin-top:8px;box-shadow:var(--shadow-xs);border:0.5px solid rgba(255,255,255,0.4)}
+.group-detail .gd-title{font-weight:600;color:var(--txt-primary);margin-bottom:4px}
+
+/* ============================================
+   结果弹窗
+   ============================================ */
+.modal-mask{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;z-index:100
+}
+.modal-mask.show{display:flex}
+.modal-card{
+  background:rgba(255,255,255,0.88);backdrop-filter:blur(40px) saturate(2.0);-webkit-backdrop-filter:blur(40px) saturate(2.0);
+  border-radius:var(--r-xl);padding:36px 24px;width:86%;max-width:310px;
+  text-align:center;box-shadow:var(--shadow-modal);border:var(--glass-border)
+}
+.modal-card .mc-icon{font-size:56px;margin-bottom:10px}
+.modal-card h3{font-size:18px;font-weight:700;color:var(--txt-primary);margin-bottom:10px}
+.modal-card p{font-size:14px;line-height:1.7;color:var(--txt-secondary);margin-bottom:20px}
+.modal-card .mc-btn{
+  display:block;width:100%;max-width:220px;margin:0 auto 10px;height:44px;padding:0 32px;border:none;border-radius:22px;font-size:15px;
+  font-weight:600;cursor:pointer;color:#FFF;
+  background:linear-gradient(135deg,#007AFF,#0056CC);
+  box-shadow:0 4px 16px rgba(0,122,255,0.28);
+  transition:transform 0.12s ease,box-shadow 0.12s ease
+}
+.modal-card .mc-btn:active{transform:scale(0.96);box-shadow:0 2px 6px rgba(0,122,255,0.2)}
+
+
+/* 结果中的关键线索 */
+.modal-card .mc-keyclue{
+  font-size:11px;color:#856404;background:rgba(255,248,225,0.60);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-radius:6px;padding:6px 10px;margin:6px 0 14px;line-height:1.5
+}
+.modal-card .mc-keyclue b{color:#B45309}
+/* 语音消息气泡 */
+.msg-bubble.voice{
+  display:flex;align-items:center;gap:6px;background:#E8F4FD;
+  border-radius:14px;padding:8px 14px
+}
+.voice-icon{
+  width:24px;height:24px;border-radius:50%;
+  background:#007AFF;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0
+}
+.voice-icon::after{
+  content:'';width:0;height:0;
+  border-left:7px solid #FFF;border-top:5px solid transparent;border-bottom:5px solid transparent;
+  margin-left:1px
+}
+.voice-dur{font-size:10px;color:rgba(0,0,0,0.4);margin-left:4px}
+
+
+/* ============================================
+   底部指示条
+   ============================================ */
+#home-indicator{
+  position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  width:134px;height:5px;background:rgba(0,0,0,0.3);border-radius:3px;z-index:20
+}
+/* ============================================
+   开场界面
+   ============================================ */
+#intro-screen{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  z-index:200;display:flex;align-items:center;justify-content:center;
+  transition:opacity 0.5s ease
+}
+#intro-screen.hide{opacity:0;pointer-events:none}
+.intro-st1,#intro-st2,#intro-st3{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  display:none;flex-direction:column;align-items:center;justify-content:center
+}
+.intro-st1.show,#intro-st2.show,#intro-st3.show{display:flex}
+/* 阶段一 - 黑色背景 */
+.intro-st1{
+  background:#000;cursor:pointer
+}
+.intro-st1 .is1-title{
+  font-size:32px;font-weight:700;color:#FFF;text-align:center;
+  position:absolute;top:28%
+}
+.intro-st1 .is1-sub{
+  font-size:16px;color:rgba(255,255,255,0.6);margin-top:12px
+}
+.intro-st1 .is1-tip{
+  position:absolute;bottom:18%;font-size:14px;
+  color:rgba(255,255,255,0.3);animation:breathe 2s ease-in-out infinite
+}
+@keyframes breathe{0%,100%{opacity:0.3}50%{opacity:1}}
+/* 阶段二 - 深蓝紫渐变 */
+.intro-st2{
+  background:linear-gradient(135deg,#1a0533 0%,#16213e 40%,#0f3460 100%);
+  padding:40px 24px;text-align:center
+}
+.intro-st2 .is2-line{
+  font-size:18px;color:#FFF;margin-bottom:16px;opacity:0;
+  transition:opacity 0.5s ease
+}
+.intro-st2 .is2-line.visible{opacity:1}
+.intro-st2 .is2-phone{
+  width:120px;height:210px;border:2px solid rgba(255,255,255,0.3);
+  border-radius:18px;margin:24px auto 28px;position:relative;
+  background:rgba(255,255,255,0.05);
+  display:flex;flex-direction:column;align-items:center;padding-top:18px;
+  opacity:0;transition:opacity 0.5s ease
+}
+.intro-st2 .is2-phone.visible{opacity:1}
+.intro-st2 .is2-phone::before{
+  content:'';width:40px;height:4px;background:rgba(255,255,255,0.3);
+  border-radius:2px;margin-bottom:12px
+}
+.intro-st2 .is2-phone .is2-pmsg{
+  width:70%;height:10px;background:rgba(255,255,255,0.25);border-radius:3px;
+  margin-bottom:6px
+}
+.intro-st2 .is2-phone .is2-pmsg:last-child{width:50%}
+.intro-st2 .is2-btn{
+  height:44px;padding:0 36px;border:none;border-radius:22px;
+  font-size:15px;font-weight:600;color:#FFF;cursor:pointer;
+  background:linear-gradient(135deg,#34C759,#28A745);
+  box-shadow:0 4px 16px rgba(52,199,89,0.35);
+  margin-top:12px;opacity:0;transition:opacity 0.5s ease
+}
+.intro-st2 .is2-btn.visible{opacity:1}
+
+
+
+/* 聊天头像 */
+.msg-avatar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.msg-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#E8E8ED}.msg-avatar-text{display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#FFF;text-shadow:0 1px 2px rgba(0,0,0,0.15)}
+.msg-row.self .msg-avatar-wrap{flex-direction:row-reverse}
+/* 视频主图占位 */
+.video-hero{background-color:#1a1a2e}
+/* 友圈帖子图片 */
+.mc-post-img{width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin:10px 0;background:#F0F0F5}
+/* 开场第二阶段手机图片 */
+.is2-phone{position:relative;overflow:hidden}
+
+/* ============================================
+   动画关键帧与类
+   ============================================ */
+
+/* 消息行初始隐藏 + 显示过渡 */
+.msg-row{opacity:0;transform:translateY(10px);transition:opacity 0.26s cubic-bezier(0.22,0.61,0.36,1),transform 0.26s cubic-bezier(0.22,0.61,0.36,1)}
+.msg-row.msg-show{opacity:1;transform:translateY(0)}
+.msg-row.system{opacity:0}
+.msg-row.system.msg-show{opacity:1}
+
+/* 药材卡片弹入 */
+@keyframes cardBounceIn{0%{opacity:0;transform:scale(0.85)}60%{opacity:1;transform:scale(1.03)}100%{opacity:1;transform:scale(1)}}
+.herb-card.bounce-in{animation:cardBounceIn 0.4s ease forwards}
+
+/* 页面过渡 */
+.app-page{
+  transition:opacity 0.25s ease,transform 0.25s ease;
+  opacity:0;transform:scale(0.96)
+}
+.app-page.show{opacity:1;transform:scale(1)}
+#desktop{transition:opacity 0.25s ease,transform 0.25s ease}
+
+/* 桌面图标弹入 */
+@keyframes iconBounceIn{0%{opacity:0;transform:translateY(40px)}60%{opacity:1;transform:translateY(-6px)}80%{transform:translateY(3px)}100%{opacity:1;transform:translateY(0)}}
+.desk-icon.icon-enter{opacity:0;transform:translateY(40px)}
+.desk-icon.icon-animated{animation:iconBounceIn 0.45s ease forwards}
+
+/* 底部导航栏上滑 */
+@keyframes dockSlideUp{from{opacity:0;transform:translateX(-50%) translateY(100%)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+#dock-bar.dock-enter{opacity:0;transform:translateX(-50%) translateY(100%)}
+#dock-bar.dock-animated{animation:dockSlideUp 0.4s ease-out 0.5s forwards}
+
+/* 橙色圆点弹出 */
+@keyframes dotPop{0%{transform:translateX(-50%) scale(0)}60%{transform:translateX(-50%) scale(1.3)}100%{transform:translateX(-50%) scale(1)}}
+.desk-dot.dot-pop{animation:dotPop 0.3s ease forwards}
+.dock-dot.dot-pop{animation:dotPop 0.3s ease forwards}
+
+/* 应用内容卡片交错动画 */
+.video-card,.shop-item,.moment-card,.group-card,.shop-review,.video-comment,.moment-comment,.group-detail,.search-bar,.group-header{
+  opacity:0;transform:translateY(12px);transition:opacity 0.3s ease,transform 0.3s ease
+}
+.video-card.card-show,.shop-item.card-show,.moment-card.card-show,.group-card.card-show,
+.shop-review.card-show,.video-comment.card-show,.moment-comment.card-show,.group-detail.card-show,
+.search-bar.card-show,.group-header.card-show{
+  opacity:1;transform:translateY(0)
+}
+
+/* 提示从顶部滑入 */
+.app-toast{
+  opacity:0;transform:translateY(-20px);
+  transition:opacity 0.3s ease,transform 0.3s ease
+}
+.app-toast.show{opacity:1;transform:translateY(0)}
+
+/* 导航栏淡入 */
+.app-nav{opacity:0;transform:translateY(-10px);transition:opacity 0.2s ease,transform 0.2s ease}
+.app-page.show .app-nav{opacity:1;transform:translateY(0)}
+
+/* 判断按钮上滑 */
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+#chat-judge .btn-real,#chat-judge .btn-fake{opacity:0;transform:translateY(40px)}
+#chat-judge .btn-real.btn-slide{animation:slideUp 0.35s ease 0.1s forwards}
+#chat-judge .btn-fake.btn-slide{animation:slideUp 0.35s ease 0.2s forwards}
+.judge-hint{opacity:0;transform:translateY(20px);transition:opacity 0.3s ease,transform 0.3s ease}
+.judge-hint.show{opacity:1;transform:translateY(0)}
+
+/* 结果弹窗动画 */
+@keyframes maskFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalPopIn{0%{opacity:0;transform:scale(0.8)}60%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+@keyframes iconPopIn{0%{opacity:0;transform:scale(0)}60%{transform:scale(1.3)}100%{opacity:1;transform:scale(1)}}
+.modal-mask.show{animation:maskFadeIn 0.2s ease forwards}
+.modal-mask.show .modal-card{animation:modalPopIn 0.4s ease forwards}
+.modal-mask.show .mc-icon{animation:iconPopIn 0.35s ease 0.2s forwards;opacity:0}
+
+/* 开场标题动画 */
+@keyframes titleFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes btnBounceIn{0%{opacity:0;transform:scale(0.5)}60%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+.intro-st1.show .is1-title{animation:titleFadeUp 0.5s ease forwards}
+.intro-st1.show .is1-sub{animation:titleFadeUp 0.5s ease 0.2s forwards;opacity:0}
+.is2-btn.bounce-in{animation:btnBounceIn 0.45s ease forwards}
+
+/* 桌面时间动画 */
+#desk-time,#desk-date{opacity:0;transform:translateY(12px)}
+#desk-time.desk-show{opacity:1;transform:translateY(0);transition:opacity 0.4s ease,transform 0.4s ease}
+#desk-date.desk-show{opacity:1;transform:translateY(0);transition:opacity 0.4s ease 0.1s,transform 0.4s ease 0.1s}
+
+/* 聊天底部栏上滑 */
+#chat-clue-bar{opacity:0;transform:translateY(12px);transition:opacity 0.3s ease,transform 0.3s ease}
+#chat-clue-bar.show,#chat-clue-bar.done{opacity:1;transform:translateY(0)}
+
+/* will-change 优化 */
+.desk-icon,.dock-icon,.msg-row,.app-page{will-change:transform,opacity}
+
+/* ============================================
+   优化新增：进度条、关卡地图、图鉴、成就、闪光
+   ============================================ */
+
+/* 桌面进度条 */
+#desk-progress-wrap{position:relative;z-index:2;width:100%;max-width:260px;margin-bottom:8px;display:none;grid-column:1/-1;justify-self:center;padding-right:46px}
+#desk-progress-wrap.show{display:block}
+#desk-progress-bar{height:4px;background:rgba(255,255,255,0.12);border-radius:2px;overflow:hidden}
+#desk-progress-fill{height:100%;background:linear-gradient(90deg,#34C759,#30D158);border-radius:2px;width:0%;transition:width 0.5s cubic-bezier(0.22,0.61,0.36,1)}
+#desk-progress-label{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;padding:0 2px}
+#desk-progress-label .dpl-current{color:#34C759;font-weight:600}
+#desk-progress-label .dpl-streak{color:#FF9500}
+
+/* 关卡地图快捷导航 */
+#desk-level-nav{position:relative;z-index:2;display:none;align-items:center;gap:2px;margin-top:10px;padding:0 12px;justify-content:center;grid-column:1/-1}
+#desk-level-nav.show{display:flex}
+.lvl-dot-small{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:all 0.3s ease;position:relative;flex-shrink:0}
+.lvl-dot-small.current{width:28px;height:28px;background:rgba(52,199,89,0.3);border:2px solid #34C759;color:#34C759;font-size:12px;box-shadow:0 0 12px rgba(52,199,89,0.25)}
+.lvl-dot-small.done{background:rgba(52,199,89,0.2);color:rgba(52,199,89,0.7)}
+.lvl-dot-small.locked{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.2)}
+.lvl-dot-small.done::after{content:'\2713';font-size:8px;margin-left:1px;color:#34C759}
+.lvl-line{width:10px;height:1px;background:rgba(255,255,255,0.15);flex-shrink:0}
+
+/* 图鉴按钮 */
+#desk-collect-btn{position:absolute;top:14px;right:56px;z-index:3;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:0.5px solid rgba(255,255,255,0.15);display:none;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:transform 0.15s ease,background 0.15s ease}
+#desk-collect-btn:active{transform:scale(0.9);background:rgba(255,255,255,0.2)}
+#desk-collect-btn.show{display:flex}
+#desk-music-btn{position:absolute;top:14px;right:14px;z-index:3;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:0.5px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:transform 0.15s ease,background 0.15s ease,color 0.15s ease;color:#FFF;user-select:none}
+#desk-music-btn:active{transform:scale(0.9);background:rgba(255,255,255,0.22)}
+#desk-music-btn.muted{color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.05)}
+#desk-collect-btn .clct-dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--red);display:none}
+#desk-collect-btn .clct-dot.show{display:block}
+
+/* 增强版结果弹窗 */
+.mc-evidence{text-align:left;margin-bottom:14px;padding:12px;background:rgba(242,242,247,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:12px;font-size:11px;line-height:1.7;color:var(--txt-secondary)}
+.mc-evidence .mce-title{font-weight:700;color:var(--txt-primary);font-size:12px;margin-bottom:8px;text-align:center}
+.mc-evidence .mce-row{display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:0.5px solid rgba(0,0,0,0.04)}
+.mc-evidence .mce-row:last-child{border-bottom:none}
+.mc-evidence .mce-app{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;flex-shrink:0;min-width:32px;text-align:center}
+.mc-evidence .mce-app.warn{background:rgba(255,59,48,0.08);color:#FF3B30}
+.mc-evidence .mce-app.good{background:rgba(52,199,89,0.08);color:#34C759}
+.mc-evidence .mce-app.neutral{background:rgba(142,142,147,0.08);color:#8E8E93}
+.modal-card .mc-streak{font-size:12px;color:#FF9500;font-weight:600;margin-bottom:10px;display:none}
+.modal-card .mc-streak.show{display:block}
+.modal-card .mc-collect-btn{display:block;width:100%;max-width:200px;margin:0 auto;height:38px;padding:0 22px;border:1.5px solid #AF52DE;border-radius:19px;font-size:13px;font-weight:600;cursor:pointer;color:#AF52DE;background:rgba(175,82,222,0.06);transition:all 0.15s ease}
+.modal-card .mc-collect-btn:active{background:rgba(175,82,222,0.15);transform:scale(0.96)}
+.modal-card .mc-collect-btn.collected{background:rgba(175,82,222,0.1);border-color:rgba(175,82,222,0.3);color:rgba(175,82,222,0.6);cursor:default;pointer-events:none}
+
+/* 图鉴页面 */
+#collection-page{position:absolute;top:0;left:0;right:0;bottom:0;z-index:300;background:linear-gradient(180deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);display:none;flex-direction:column}
+#collection-page.show{display:flex;animation:maskFadeIn 0.3s ease forwards}
+.collect-nav{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}
+.collect-nav .cn-back{font-size:14px;cursor:pointer;color:rgba(255,255,255,0.7);padding:4px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;transition:all 0.15s}
+.collect-nav .cn-back:active{background:rgba(255,255,255,0.08)}
+.collect-nav .cn-back svg{width:18px;height:18px;fill:rgba(255,255,255,0.7)}
+.collect-nav .cn-title{font-size:17px;font-weight:600;color:#FFF;letter-spacing:-0.01em}
+.collect-nav .cn-count{font-size:13px;color:rgba(255,255,255,0.5)}
+.collect-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.collect-body::-webkit-scrollbar{display:none}
+.collect-body h4{font-size:14px;color:rgba(255,255,255,0.55);margin-bottom:12px;font-weight:400}
+.collect-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px;align-items:start}
+.collect-item{background:rgba(255,255,255,0.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:14px;padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.2s ease;position:relative;overflow:hidden;border:0.5px solid rgba(255,255,255,0.08);min-width:0}
+.collect-item.unlocked{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2)}
+.collect-item.unlocked:hover{background:rgba(255,255,255,0.14)}
+.collect-item:active{transform:scale(0.96)}
+.collect-item .ci-img{width:56px;height:56px;border-radius:12px;margin:0 auto 8px;overflow:hidden;background:linear-gradient(135deg,#F5F0E8,#EDE4D4)}
+.collect-item.locked .ci-img{background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:24px;filter:grayscale(1) brightness(0.3)}
+.collect-item .ci-img img{width:100%;height:100%;object-fit:cover}
+.collect-item .ci-name{font-size:12px;font-weight:600;color:#FFF;margin-bottom:3px}
+.collect-item .ci-badge{font-size:10px;color:#34C759;font-weight:500}
+.collect-item.locked .ci-name{color:rgba(255,255,255,0.25)}
+.collect-item.locked .ci-badge{color:rgba(255,255,255,0.15)}
+.collect-item .ci-star{position:absolute;top:6px;right:8px;font-size:14px;opacity:0;transform:scale(0);transition:all 0.3s ease}
+.collect-item.unlocked .ci-star{opacity:1;transform:scale(1)}
+
+/* 成就提示 */
+#achieve-toast{position:absolute;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:250;background:rgba(0,0,0,0.85);backdrop-filter:blur(30px) saturate(2.0);-webkit-backdrop-filter:blur(30px) saturate(2.0);border-radius:28px;padding:12px 20px;display:none;align-items:center;gap:10px;color:#FFF;border:0.5px solid rgba(255,255,255,0.2);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:all 0.4s cubic-bezier(0.22,0.61,0.36,1)}
+#achieve-toast.show{display:flex;transform:translateX(-50%) translateY(0)}
+#achieve-toast .at-icon{font-size:28px}
+#achieve-toast .at-title{font-size:13px;font-weight:700}
+#achieve-toast .at-desc{font-size:11px;color:rgba(255,255,255,0.6)}
+
+/* 闪光粒子 */
+.sparkle-container{position:fixed;pointer-events:none;z-index:300;top:0;left:0;width:100%;height:100%}
+.sparkle{position:absolute;width:6px;height:6px;border-radius:50%;animation:sparkleFly 0.8s ease-out forwards}
+@keyframes sparkleFly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(0)}}
+
+/* 桌面图标提示脉冲 */
+.desk-icon.highlight{border:2px solid rgba(255,165,0,0.3)}
+
+/* 桌面提示栏 */
+#desk-hint{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#FFF;padding:10px 18px;border-radius:16px;font-size:13px;white-space:nowrap;z-index:10;display:none;opacity:0;transition:opacity 0.5s ease;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+#desk-hint.show{display:block;opacity:1}
+
+</style>
+</head>
+<body>
+<div id="phone-shell">
+ <div id="screen-bezel">
+
+  <div id="island"><span class="dot"></span></div>
+
+  <div id="status-bar">
+    <span class="time" id="stime">9:41</span>
+    <span class="icons">
+      <span class="sig"><span></span><span></span><span></span><span></span></span>
+      <span>中国移动</span>
+      <span class="bat"><span class="bat-fill"></span></span>
+    </span>
+  </div>
+
+  <div id="main-screen">
+
+    <!-- ===========================================
+         开场界面
+         =========================================== -->
+    <div id="intro-screen" onclick="introClick(event)">
+      <div class="intro-st1 show" id="is-stage1">
+        <div class="is1-title">养生群里的秘密</div>
+        <div class="is1-sub">一款中药鉴别科普游戏</div>
+        <div class="is1-tip">点击屏幕继续</div>
+      </div>
+      <div class="intro-st2" id="is-stage2">
+        <div class="is2-line" id="is2-l1">周末下午，你打开手机——</div>
+        <div class="is2-line" id="is2-l2">妈妈在「幸福一家人」群里发来一条消息</div>
+        <div class="is2-line" id="is2-l3">她又看中了一批养生药材，让你帮忙把把关</div>
+        <div class="is2-phone" id="is2-phone">
+          <img src="herb_images/phone_intro.png" class="is2-phone-img" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:18px;position:absolute;top:0;left:0">
+          <div class="is2-pmsg"></div>
+          <div class="is2-pmsg"></div>
+          <div class="is2-pmsg"></div>
+        </div>
+        <button class="is2-btn" id="is2-btn" onclick="event.stopPropagation();AudioManager.sfx.buttonClick();beginGame()">开始鉴别</button>
+      </div>
+    </div>
+
+
+    <!-- ===========================================
+         桌面
+         =========================================== -->
+    <div id="desktop">
+      <div id="desk-time">9:41</div>
+      <div id="desk-date">6月24日 星期三</div>
+      <div id="desk-music-btn" onclick="event.stopPropagation();AudioManager.toggleBGM()" title="音乐开关">🔊</div>
+      <div id="desk-collect-btn" onclick="event.stopPropagation();openCollection()" title="药材图鉴">📖<div class="clct-dot" id="clct-dot"></div></div>
+      <div id="app-grid">
+      <div id="desk-progress-wrap"><div id="desk-progress-bar"><div id="desk-progress-fill"></div></div><div id="desk-progress-label"><span class="dpl-current" id="dpl-current"></span><span id="dpl-streak" class="dpl-streak"></span></div></div>
+      <div id="desk-level-nav"></div>
+        <div class="desk-icon icon-chat" onclick="goApp('chat')" id="dicon-chat">
+          <div class="desk-badge red" id="dbadge-chat-red">1</div>
+          <div class="desk-badge green" id="dbadge-chat-green">!</div>
+          <div class="icon-label">聊养圈</div>
+        </div>
+        <div class="desk-icon icon-shua" onclick="goApp('shua')" id="dicon-shua">
+          <div class="desk-dot" id="ddot-shua"></div>
+          <div class="icon-label">刷看</div>
+        </div>
+        <div class="desk-icon icon-tao" onclick="goApp('tao')" id="dicon-tao">
+          <div class="desk-dot" id="ddot-tao"></div>
+          <div class="icon-label">淘实惠</div>
+        </div>
+        <div class="desk-icon icon-you" onclick="goApp('you')" id="dicon-you">
+          <div class="desk-dot" id="ddot-you"></div>
+          <div class="icon-label">友圈</div>
+        </div>
+        <div class="desk-icon icon-lin" onclick="goApp('lin')" id="dicon-lin">
+          <div class="desk-dot" id="ddot-lin"></div>
+          <div class="icon-label">邻聚</div>
+        </div>
+      </div>
+      <div id="dock-bar">
+        <div class="dock-icon icon-chat" onclick="goApp('chat')"></div>
+        <div class="dock-icon icon-shua" onclick="goApp('shua')"><div class="dock-dot" id="dockdot-shua"></div></div>
+        <div class="dock-icon icon-tao" onclick="goApp('tao')"><div class="dock-dot" id="dockdot-tao"></div></div>
+        <div class="dock-icon icon-you" onclick="goApp('you')"><div class="dock-dot" id="dockdot-you"></div></div>
+      </div>
+      <div id="desk-hint">点击带橙色圆点的 App，收集药材线索</div>
+    </div>
+
+    <!-- ===========================================
+         应用：聊养圈（聊天）
+         =========================================== -->
+    <div class="app-page" id="app-chat">
+      <div class="app-nav">
+        <span class="nav-back" onclick="goDesktop()">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          桌面
+        </span>
+        <span class="nav-title">幸福一家人 <span style="font-size:11px;color:var(--gray);font-weight:400">(12)</span></span>
+        <span class="nav-opt">&#8942;</span>
+      </div>
+      <div id="seller-info-bar"><div class="sib-inner"><div class="sib-img"></div><div class="sib-content"><div class="sib-name"></div><div class="sib-desc"></div></div></div></div>
+      <div class="app-body" id="chat-body"></div>
+      <div id="chat-bottom">
+        <div id="chat-clue-bar"></div>
+        <div id="chat-judge">
+          <span class="judge-hint" id="judge-hint"></span>
+          <button class="btn-real" onclick="AudioManager.sfx.buttonClick();judge(true)">这是真品</button>
+          <button class="btn-fake" onclick="AudioManager.sfx.buttonClick();judge(false)">这是假货</button>
+        </div>
+        <div id="chat-input">输入消息...</div>
+      </div>
+    </div>
+
+    <!-- ===========================================
+         应用：刷看（短视频）
+         =========================================== -->
+    <div class="app-page" id="app-shua">
+      <div class="app-nav">
+        <span class="nav-back" onclick="markAndGoDesktop('shua')">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          桌面
+        </span>
+        <span class="nav-title">刷看</span>
+        <span class="nav-opt">&#128269;</span>
+      </div>
+      <div class="app-toast" id="toast-shua" style="display:none"></div>
+      <div class="app-body" id="body-shua"></div>
+    </div>
+
+    <!-- ===========================================
+         应用：淘实惠（购物）
+         =========================================== -->
+    <div class="app-page" id="app-tao">
+      <div class="app-nav">
+        <span class="nav-back" onclick="markAndGoDesktop('tao')">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          桌面
+        </span>
+        <span class="nav-title">淘实惠</span>
+        <span class="nav-opt">&#128722;</span>
+      </div>
+      <div class="app-toast" id="toast-tao" style="display:none"></div>
+      <div class="app-body" id="body-tao"></div>
+    </div>
+
+    <!-- ===========================================
+         应用：友圈（社交）
+         =========================================== -->
+    <div class="app-page" id="app-you">
+      <div class="app-nav">
+        <span class="nav-back" onclick="markAndGoDesktop('you')">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          桌面
+        </span>
+        <span class="nav-title">友圈</span>
+        <span class="nav-opt">&#128247;</span>
+      </div>
+      <div class="app-toast" id="toast-you" style="display:none"></div>
+      <div class="app-body" id="body-you"></div>
+    </div>
+
+    <!-- ===========================================
+         应用：邻聚（团购）
+         =========================================== -->
+    <div class="app-page" id="app-lin">
+      <div class="app-nav">
+        <span class="nav-back" onclick="markAndGoDesktop('lin')">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          桌面
+        </span>
+        <span class="nav-title">邻聚团购</span>
+        <span class="nav-opt">&#128205;</span>
+      </div>
+      <div class="app-toast" id="toast-lin" style="display:none"></div>
+      <div class="app-body" id="body-lin"></div>
+    </div>
+
+  </div>
+
+  
+      <!-- 成就提示 -->
+    <div id="achieve-toast"><span class="at-icon" id="at-icon"></span><div><div class="at-title" id="at-title"></div><div class="at-desc" id="at-desc"></div></div></div>
+<div id="home-indicator"></div>
+
+  <!-- ===========================================
+       结果弹窗
+       =========================================== -->
+  
+    <!-- ===========================================
+         图鉴页面
+         =========================================== -->
+    <div id="collection-page">
+      <div class="collect-nav">
+        <span class="cn-back" onclick="closeCollection()"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>返回</span>
+        <span class="cn-title">药材图鉴</span>
+        <span class="cn-count" id="cn-count"></span>
+      </div>
+      <div class="collect-body" id="collect-body"></div>
+    </div>
+
+  <div class="modal-mask" id="result-modal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="mc-icon" id="rm-icon"></div>
+      <h3 id="rm-title"></h3>
+      <div id="rm-score"></div>
+      <div class="mc-streak" id="rm-streak"></div>
+      <div class="mc-keyclue" id="rm-keyclue"></div>
+      <div class="mc-evidence" id="rm-evidence"></div>
+      <p id="rm-msg"></p>
+      <button class="mc-btn" id="rm-next-btn" onclick="AudioManager.sfx.buttonClick();nextLevel()">下一关 &#8594;</button>
+      <button class="mc-collect-btn" id="rm-collect-btn" onclick="AudioManager.sfx.buttonClick();event.stopPropagation();addToCollectionFromModal()">📖 收入图鉴</button>
+      <button class="mc-collect-btn" onclick="AudioManager.sfx.buttonClick();event.stopPropagation();document.getElementById('result-modal').classList.remove('show');goDesktop()">🏠 返回桌面</button>
+    </div>
+  </div>
+
+ </div>
+
+  <!-- ===========================================
+       详情浮层
+       =========================================== -->
+  <div class="detail-overlay" id="detail-overlay" onclick="if(event.target===this)closeDetail()">
+    <div class="detail-popup" id="detail-popup"></div>
+  </div>
+
+</div>
+
+<script>
+// ============================================
+// 关卡数据
+// ============================================
+var LEVELS=[
+{id:1,herb:'三七',real:true,keyClue:'断面墨绿色、有菊花纹、敲碎后质地坚硬——正品特征',cardTitle:'文山三七',cardDesc:'表面灰褐色有瘤状突起，断面墨绿色有菊花纹，质地坚硬——正品三七特征',img:'herb_images/herb_三七.jpg',seller:'卖家老王',sellerDesc:'正宗文山三七！看看这品相，个头大、品相好，吃了膝盖马上不疼！',
+ chat:[
+  {sender:'妈妈',type:'other',text:'[语音] 28"',voiceText:'儿子！你王姨刚才给我发了那个三七的照片，说她吃了半个月膝盖就不疼了，以前爬楼梯咔咔响的。妈寻思给你爸也买点试试，你快帮妈看看靠不靠谱啊！别让人骗了，现在假货多得很！'},
+  {sender:'妈妈',type:'other',text:'儿子儿子！！你王姨刚给我发了个三七，说吃了膝盖不疼了，我寻思给你爸也整点？你帮妈掌掌眼呗'},
+  {sender:'王阿姨',type:'other',text:'姐！这个三七真的好，我吃了半个月腿利索多了！以前爬楼梯膝盖咔咔响，现在好多了！他家货实在'},
+  {sender:'养生达人老张',type:'other',text:'[语音] 52"',voiceText:'各位群友听我一句啊！三七这玩意儿市面上假货太多了，好多是拿菊三七冒充的。你掰开一看断面灰白灰白的，跟生姜似的，那就是假货。真三七断面墨绿色，掰开有菊花纹路，敲起来硬邦邦的。还有藤三七也是冒充品，断面更白更软。菊三七长得跟真三七很像，不掰开根本看不出。老张我见过太多人上当，花几百块买一堆假货。记住这三点：墨绿断面、菊花纹、硬邦邦，缺一不可！信老张没错的。'},
+  {sender:'养生达人老张',type:'other',text:'各位群友听我一句！三七这玩意儿市面上假货太多勒，好多拿菊三七冒充的。真三七断面墨绿色，掰开一看有菊花纹路，敲起来硬邦邦的，假的三七断面灰白灰白的，长得像生姜。大家买之前一定要记住这几点！信老张没错的。'},
+  {sender:'妈妈',type:'other',text:'@儿子 老张说的我记不住...你帮妈去刷看还有淘实惠瞅瞅？友圈里好像也有人聊过这个，邻聚那边说不定有团购，都帮妈看看哈（拜托）'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'三分钟学会辨别真假三七',author:'中药鉴别课堂',desc:'正品三七断面墨绿色，有菊花状纹理，敲开质地硬脆。假三七（菊三七或藤三七）断面灰白色、质软、无菊花纹。记住：真三七墨绿菊花纹，假三七灰白像生姜。',comments:[{user:'中药师老郑',text:'最简单的方法——掰开看断面，墨绿色+菊花纹=真，灰白色=假，百试百灵'}]},
+ taoShiHui:{name:'正宗文山三七 500g',price:328,origPrice:458,shop:'文山农特产',reviews:[{user:'王**姐',text:'买了两次了！掰开墨绿色菊花纹很明显，泡水喝了一个月膝盖真的好多了'},{user:'李**生',text:'买来敲开验了，断面确实墨绿色菊花纹，正品'}]},
+ youQuan:{user:'王阿姨',avatar:'a1',initials:'王',text:'姐妹们！这个三七我吃了大半个月了，膝盖真的好多了。他家掰开是墨绿色的，有花纹，真货！我不是托啊，不信自己掰开看。',comments:[{user:'妈妈',text:'王姐推荐的应该靠谱！'},{user:'李阿姨',text:'我也买过！掰开墨绿墨绿的，真货'}]},
+ linJu:{name:'文山正品三七团购',price:298,origPrice:428,joined:82,countdown:'剩2天',desc:'文山直发，断面墨绿色，正品保障',info:'王阿姨推荐，已团82份'}
+},
+{id:2,herb:'冬虫夏草',real:false,keyClue:'颜色金黄均匀得像染的、虫体过于完整、断面无消化腺——拼接染色假虫草',cardTitle:'那曲冬虫夏草',cardDesc:'虫体金黄饱满、草头自然、断面白色有消化腺黑线——真冬虫夏草三大标志',img:'herb_images/herb_冬虫夏草.jpg',seller:'卖家老钱',sellerDesc:'那曲冬虫夏草！颜色金黄，颗颗饱满，只只都是精品！比药店便宜一半，假一赔十，数量不多赶紧下手！',
+ chat:[
+  {sender:'群友周姐',type:'other',text:'群里有人懂虫草吗？我朋友推的这个，说那曲的，颜色金黄特别漂亮，价格也比药店便宜一半，靠不靠谱啊？'},
+  {sender:'养生达人老张',type:'other',text:'周姐你先别急！虫草这玩意儿假的太多了——亚香棒虫草、凉山虫草、还有拿面粉压的...你看下虫体中间有没有四条腿？真虫草虫体有四对足'},
+  {sender:'群友周姐',type:'other',text:'@养生达人老张 老张你看看这个[图片] 颜色挺金黄的，但我数不出几条腿...'},
+  {sender:'养生达人老张',type:'other',text:'[语音] 38"',voiceText:'周姐周姐！我仔细看了你发的照片，颜色金黄得太均匀了，跟拿颜料刷过一样。真虫草颜色是黄棕色、不均匀的，颜色不会这么假。你看虫体和草头的连接处，特别不自然。真虫草断面白白的，中间有一条黑线叫消化腺。大家买虫草一定要看这几点，老张我就提醒到这里！'},
+  {sender:'养生达人老张',type:'other',text:'周姐周姐！我仔细看了你发的照片，颜色金黄得太均匀了，跟染的一样。而且你看虫体和草头的连接处，特别不自然。真虫草断面白白的，中间有一条黑线（消化腺）。大家买虫草一定要对照这些特征自己判断！'},
+  {sender:'妈妈',type:'other',text:'@儿子 你看看周姐发的这个...虫草太贵了买错了亏大了，你去刷看/淘实惠/友圈/邻聚帮妈研究研究'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'真假虫草一招辨别',author:'中药鉴识',desc:'真虫草：虫体深黄到棕黄，颜色自然不均匀；断面白色、中心有黑色V形消化腺；虫体中部4对足明显。假虫草：颜色金黄均匀（染色）；断面全白无消化腺；虫体与草头连接处不自然；可能有化学染料味。',comments:[{user:'虫草鉴定师',text:'最重要的特征：断面必须有V形黑线（消化腺）！全白的一定是假的'}]},
+ taoShiHui:{name:'那曲冬虫夏草 礼盒装 20根',price:1288,origPrice:3800,shop:'藏草堂滋补店',reviews:[{user:'周**姐',text:'颜色金黄得太假了，一闻有股怪味，中药师朋友说是染色的亚香棒虫草'},{user:'中**师',text:'断口全白没有消化腺，虫体过于完整，典型拼接染色'},{user:'张**生',text:'泡水后掉色！水都变黄了，妥妥的染色货，已退货'}]},
+ youQuan:{user:'养生达人老张',avatar:'a3',initials:'张',text:'各位群友，老张今天必须说两句！最近群里有人推那种颜色特别金黄的虫草，我告诉你们——真虫草颜色是黄棕色、不均匀的！颜色金黄得像刷了漆的、闻起来有怪味的、断面全白没有黑线的，百分之百是假的！别贪便宜，好虫草不愁卖。',comments:[{user:'周姐',text:'还好没买！谢谢老张'},{user:'妈妈',text:'记住了！金黄均匀+断面全白=假货'}]},
+ linJu:{name:'那曲正品虫草团购',price:3800,origPrice:4800,joined:12,countdown:'剩5天',desc:'那曲直供，颜色自然黄棕，一物一码溯源',info:'对比1288的"礼盒装"，正规价格在3800以上'}
+},
+{id:3,herb:'灵芝',real:true,keyClue:'菌盖肾形、边缘呈波浪状、表面有漆样光泽——野生赤芝特征',cardTitle:'野生赤灵芝',cardDesc:'菌盖肾形、边缘波浪状内卷、表面漆样光泽、背面管孔——野生赤芝鉴别要点',img:'herb_images/herb_灵芝.jpg',seller:'卖家老刘',sellerDesc:'野生赤灵芝！我在后山悬崖上采的，晒干后表面跟刷了漆一样亮！泡水喝延年益寿，数量不多先到先得！',
+ chat:[
+  {sender:'群主张叔',type:'other',text:'各位群友，老刘家前几天在山里采的灵芝，发群里大家看看。说是野生的赤芝'},
+  {sender:'养生达人老张',type:'other',text:'[语音] 35"',voiceText:'真灵芝菌盖是肾形的，边缘波浪状往里卷，干了以后表面有一层漆样的光泽，看着亮亮的。假灵芝最常见就是树舌，长得扁扁平平跟鞋垫子一样，一点光泽都没有。大家买灵芝一定要看菌盖是不是肾形、边缘有没有卷曲、表面有没有漆样光泽，对照这几个特征分辨！'},
+  {sender:'养生达人老张',type:'other',text:'真灵芝菌盖是肾形的，边缘波浪状往里卷，表面有漆样光泽。假灵芝（树舌）长得像鞋垫子，扁扁平平的，没有那个光泽。大家对照这几个特征自己判断一下！'},
+  {sender:'妈妈',type:'other',text:'@儿子 张叔和老张都说了灵芝怎么认，你再帮妈去那四个地方看看？确认一下灵芝怎么挑'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'野生灵芝 vs 树舌：一张图看懂',author:'草药鉴别',desc:'真灵芝：菌盖肾形或半圆形，边缘波浪状向内卷曲，表面有漆样光泽。假灵芝（树舌）：菌盖扁平像鞋垫，边缘不卷曲，表面无漆样光泽，质地像木头。最简单区分——真灵芝有"漆面感"，假的无光泽。',comments:[{user:'采药人',text:'山上最常见的假货就是树舌，扁扁平平的。真灵芝边缘卷曲、表面发亮，一眼就能看出来'}]},
+ taoShiHui:{name:'野生赤灵芝 干品 200g',price:268,origPrice:398,shop:'老刘山货',reviews:[{user:'张**叔',text:'老刘亲自在悬崖上采的，菌盖肾形、边缘卷曲、表面漆亮，品质好！'},{user:'中**好',text:'买来泡水喝，切片后闻起来有特殊的菌香，跟药店买的完全不一样'}]},
+ youQuan:{user:'群主张叔',avatar:'a2',initials:'张',text:'给大家看看老刘采的灵芝，干了以后表面亮得像刷了漆。老刘说在悬崖上蹲了半下午才采到的，不容易。',comments:[{user:'妈妈',text:'张叔推荐的应该靠谱！'},{user:'李阿姨',text:'老刘这人实在，山货一直不错'}]},
+ linJu:{name:'野生赤灵芝团购',price:238,origPrice:358,joined:35,countdown:'剩4天',desc:'老刘亲自在后山采的野生赤芝',info:'群主张叔推荐，已团35份'}
+},
+{id:4,herb:'石斛',real:false,keyClue:'颜色过于翠绿鲜亮、嚼之无黏性无回甘——染色假石斛',cardTitle:'铁皮石斛',cardDesc:'茎圆柱形节明显、断面纤维性、嚼之黏牙回甘——正品铁皮石斛特征',img:'herb_images/herb_石斛.jpg',seller:'卖家阿芳',sellerDesc:'铁皮石斛！新鲜采摘的，颜色翠绿翠绿的，泡水喝对胃好！一斤才128，今天下单送保温杯！',
+ chat:[
+  {sender:'李阿姨',type:'other',text:'阿芳啊，你家这个石斛颜色怎么这么绿呀？我去年药店买的石斛颜色好像没这么鲜亮，你能给我解释解释不？'},
+  {sender:'养生达人老张',type:'other',text:'李姐说得对！真铁皮石斛嚼起来黏黏的、有股清香回甘。新鲜石斛一般是黄绿色，有的还带紫斑。大家买石斛记得嚼一嚼，黏牙回甘才是关键！'},
+  {sender:'妈妈',type:'other',text:'@儿子 阿芳说赔十倍呢...但到底嚼起来黏不黏牙咱们也不知道呀。你帮妈去刷看/淘实惠/友圈/邻聚核实一下？'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'真假石斛的最简单鉴别法',author:'中药科普',desc:'正品铁皮石斛：黄绿色（非翠绿），嚼之有黏性和回甘，纤维少渣少。假石斛：颜色翠绿鲜亮（染色），嚼之无黏性、无回甘，有的有酸味（硫熏）。记住：嚼一嚼就知道了！黏牙回甘的才是真的。',comments:[{user:'老中医',text:'石斛最大的特点就是嚼起来黏黏的有回甘，不黏的肯定不是铁皮'}]},
+ taoShiHui:{name:'铁皮石斛鲜条 500g',price:128,origPrice:258,shop:'阿芳养生馆',reviews:[{user:'李**姨',text:'颜色绿得不正常，嚼了没黏性也没回甘，跟嚼干草似的'},{user:'中**好',text:'泡出来的水颜色发绿，明显染过。正品铁皮石斛泡水是淡黄绿色的'},{user:'张**生',text:'买来对比了药店的，颜色差太多了。这翠绿色一看就是加了东西'}]},
+ youQuan:{user:'养生达人老张',avatar:'a3',initials:'张',text:'老张再说一次啊！石斛最重要的鉴别——嚼！黏牙的、回甘的、渣少的才是铁皮。绿得像菜叶子的、嚼起来没味的，趁早扔了！(严肃)',comments:[{user:'妈妈',text:'记住了！黏牙回甘才是真货（笔记）'},{user:'群友',text:'我之前就买过翠绿的！亏了亏了'}]},
+ linJu:{name:'铁皮石斛鲜条团购',price:198,origPrice:298,joined:45,countdown:'剩3天',desc:'自然黄绿色，嚼之黏牙回甘',info:'对比阿芳128送保温杯，正规品198以上'}
+},
+{id:5,herb:'人参',real:true,keyClue:'芦头长、参体有环纹（铁线纹）、须根有珍珠点——野山参特征',cardTitle:'长白山野山参',cardDesc:'芦头细长（3cm+）、参体有铁线纹、须根带珍珠点——野山参三大标志',img:'herb_images/herb_人参.jpg',seller:'卖家老赵',sellerDesc:'长白山林下野山参，芦头长、环纹密、珍珠点清楚得很。我舅在长白山自己挖的，一共就这几根，要的私聊',
+ chat:[
+  {sender:'群友老李',type:'other',text:'老赵啊，你这个参看着不大啊，我上次超市买的比你这个大多了'},
+  {sender:'养生达人老张',type:'other',text:'真正的林下野山参就是"芦长碗密枣核丁"，参体不大但药力足。园参看着大但芦头短、环纹浅，吃了效果差一截。大家买人参记得看芦头长度和环纹密度！'},
+  {sender:'妈妈',type:'other',text:'@儿子 老赵的人参说是野生的，老张也说了怎么认。不过野山参贵得很，你帮妈去那四个app再查一下怎么认？'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'野山参vs园参：记住"芦长碗密"四个字',author:'参茸鉴别',desc:'野山参特征：芦头细长（年份久的可达3cm以上），参体小但有细密环纹（铁线纹），须根有珍珠状突起（珍珠点）。园参特征：芦头短粗，参体肥大，环纹粗浅，须根多但无珍珠点。口诀：野山参"芦长碗密枣核丁，紧皮细纹珍珠须"。',comments:[{user:'老参农',text:'最简单的：芦头越长越细越好，参体不要太大，须根上要有小白疙瘩（珍珠点）'}]},
+ taoShiHui:{name:'长白山林下野山参 15年',price:860,origPrice:1200,shop:'老赵山货铺',reviews:[{user:'老**李',text:'看着小但炖汤味道特别浓，喝完浑身发热，比超市买的园参强十倍'},{user:'中**生',text:'芦头3厘米，环纹清晰，珍珠点明显，确实是林下参'}]
+ },
+ youQuan:{user:'群友老李',avatar:'a1',initials:'李',text:'老赵这人实在！我之前说他参小，被他科普了一顿。才知道野山参就是小，浓缩的精华！（哈哈大笑）炖了半根参须鸡汤，喝完全身热乎乎的',comments:[{user:'妈妈',text:'哈哈我也以为越大越好，长知识了！'},{user:'群友',text:'老赵的参确实不错，我也买过'}]},
+ linJu:{name:'长白山野山参团购',price:780,origPrice:1100,joined:8,countdown:'剩6天',desc:'长白山直供，15年林下参，数量有限',info:'熟人老赵供货，已团8根'}
+},
+{id:6,herb:'枸杞',real:false,keyClue:'颜色鲜红均匀、泡水后掉色水变红——硫熏染色枸杞',cardTitle:'宁夏特级枸杞',cardDesc:'暗红色有褶皱、大小不均、泡水淡黄清澈——天然枸杞特征，非鲜红油亮',img:'herb_images/herb_枸杞.jpg',seller:'卖家小王',sellerDesc:'宁夏特级枸杞！颗颗饱满颜色红亮！19.9买一送一！泡水煲汤都好，赶紧囤！',
+ chat:[
+  {sender:'群友老周',type:'other',text:'小王啊，你这个枸杞泡了水以后怎么水变红了？我泡枸杞这么多年，正常枸杞泡水不是淡黄色的吗？'},
+  {sender:'养生达人老张',type:'other',text:'老周你这个观察太关键了！枸杞泡水应该是淡黄色、清澈的。正品枸杞颜色暗红、有点皱，不是那种鲜红油亮的。大家买枸杞一定要泡水试试颜色对不对！'},
+  {sender:'妈妈',type:'other',text:'@儿子 差一点就下单了...枸杞天天泡水喝的，买到假的就惨了。你帮妈去那几个地方查查枸杞怎么挑？'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'枸杞泡水变色？小心硫熏枸杞',author:'食品安全',desc:'正品枸杞：颜色暗红自然、有褶皱、大小不均；泡水后水呈淡黄色、清澈。硫熏枸杞：颜色鲜红油亮、颗颗饱满均匀；泡水后水变红或浑浊；闻之有酸味。硫磺熏过的枸杞不仅营养被破坏，长期食用还会损伤肝肾。',comments:[{user:'检测员',text:'泡水发红=染色或硫熏，正常枸杞泡出来的水是淡黄清亮的，记住这个就够了'}]},
+ taoShiHui:{name:'宁夏特级枸杞 买一送一',price:19.9,origPrice:39.9,shop:'小王特产店',reviews:[{user:'周**叔',text:'泡水后水都红了，一闻有股酸味，正品枸杞泡水是淡黄色的，这明显是硫熏的'},{user:'吃**货',text:'太红了，颗粒太均匀太漂亮，天然的枸杞不可能长成这样'},{user:'张**姨',text:'泡了一晚上水变成深红色，不敢喝了'}]},
+ youQuan:{user:'养生达人老张',avatar:'a3',initials:'张',text:'各位注意了！枸杞不是越红越好！天然枸杞暗红色、有点皱、大小不一。那种鲜红发亮的、颗颗一样大的——百分之百处理过！最简单的方法：抓一把泡水，水变淡黄色=正常，水变红=有鬼！',comments:[{user:'老周',text:'谢谢老张！我家那袋鲜红的赶紧扔了'},{user:'妈妈',text:'以前买枸杞就喜欢挑红的...细思极恐'}]},
+ linJu:{name:'宁夏中宁枸杞团购',price:48,origPrice:68,joined:168,countdown:'剩1天',desc:'自然暗红、无硫熏、泡水淡黄',info:'对比19.9买一送一，正规宁夏枸杞在48以上'}
+},
+{id:7,herb:'天麻',real:true,keyClue:'顶端有鹦哥嘴、尾部有肚脐眼、断面角质状半透明——正品三大特征',cardTitle:'野生天麻',cardDesc:'顶端鹦哥嘴+尾部肚脐眼+断面角质半透明——三特征全齐才是正品天麻',img:'herb_images/herb_天麻.jpg',seller:'卖家老钱',sellerDesc:'山里刚挖的野生天麻！自己上山采的，每个都有鹦哥嘴和肚脐眼，正宗得很。切片一嚼嘴里发脆发黏',
+ chat:[
+  {sender:'药材鉴定老黄',type:'other',text:'大家记住天麻怎么认：顶端有"鹦哥嘴"（红色的干枯芽苞）、尾部有"肚脐眼"（脱落的疤痕）、断面半透明角质状，嚼起来发脆有黏性。对照这三个特征检查就行！'},
+  {sender:'妈妈',type:'other',text:'@儿子 老黄是我们群的鉴定专家，他教了大家怎么认。不过天麻也不便宜，你再帮妈去刷看/淘实惠/友圈/邻聚看看别人怎么说？'},
+  {sender:'养生达人老张',type:'other',text:'天麻三大特征——鹦哥嘴（顶端红棕色芽苞）、肚脐眼（尾部圆形凹痕）、断面半透明角质状。假天麻断面是粉粉的，一嚼散渣。买天麻记得检查这三个地方！'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'天麻鉴别：记住鹦哥嘴、肚脐眼、角质断面',author:'中药鉴别课堂',desc:'正品天麻三大特征缺一不可：①顶端有"鹦哥嘴"（红棕色干枯芽苞）；②尾部有"肚脐眼"（圆形凹陷疤痕）；③断面半透明角质状，嚼之发脆有黏性。假天麻通常没有这三个特征，断面粉质松散发渣。',comments:[{user:'药材老手',text:'鹦哥嘴+肚脐眼+角质断面，三个全齐才是正品，少一个都要警惕'}]},
+ taoShiHui:{name:'野生天麻 鹦哥嘴特征明显',price:320,origPrice:480,shop:'老钱山货',reviews:[{user:'黄**生',text:'断面半透明角质状，有鹦哥嘴和肚脐眼特征，嚼起来发脆黏牙，正品无疑'},{user:'中**士',text:'买来对比了药店的，特征一致，老钱没忽悠人'}]},
+ youQuan:{user:'药材鉴定老黄',avatar:'a3',initials:'黄',text:'老钱这批天麻我一个一个验过了。鹦哥嘴明显、肚脐眼清楚、断面半透明、嚼之发脆有黏性。大家放心买！',comments:[{user:'妈妈',text:'有老黄这句话就踏实了！'},{user:'群友',text:'已入！老黄认证必须信'}]},
+ linJu:{name:'正宗野生天麻团购',price:298,origPrice:450,joined:56,countdown:'剩1天',desc:'老钱亲自采挖，每个都有鹦哥嘴',info:'药材鉴定老黄推荐，已团56份'}
+},
+{id:8,herb:'黄芪',real:false,keyClue:'切片颜色太白、无豆腥味甚至有酸味——硫磺熏过的假黄芪',cardTitle:'甘肃野生黄芪切片',cardDesc:'黄白色非纯白、有豆腥味、断面纤维性强——正品黄芪辨别关键',img:'herb_images/herb_黄芪.jpg',seller:'卖家小孙',sellerDesc:'甘肃野生黄芪切片！色白干净，泡水喝补气效果杠杠的！68一斤，比药店便宜一半多',
+ chat:[
+  {sender:'中医爱好者阿明',type:'other',text:'小孙我问一下，你这黄芪闻着好像没什么豆子味？我中医老师说过黄芪应该有股淡淡的豆腥味，切成片应该是黄白色的...你这个颜色看着有点不大对？'},
+  {sender:'中医爱好者阿明',type:'other',text:'我泡了一下尝尝，怎么水有点酸味呢？正品黄芪闻着有豆腥味，泡水不应该发酸吧？'},
+  {sender:'养生达人老张',type:'other',text:'@中医爱好者阿明 你观察得很仔细！黄芪切片正常是淡黄白色、有豆腥味。颜色太白+没豆腥味+泡水发酸，这些特征组合在一起就要多留个心眼了。大家买黄芪一定记住：闻味道、看颜色、尝口感！'},
+  {sender:'妈妈',type:'other',text:'@儿子 差一点又上当了...你帮妈去刷看/淘实惠/友圈/邻聚看看正常黄芪长啥样？以后妈自己也会看'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'黄芪鉴别：豆腥味是关键',author:'中药科普',desc:'正品黄芪切片黄白色（非纯白），有淡淡的豆腥味，嚼之也有豆腥气。硫熏黄芪：切片雪白、无豆腥味、泡水有酸味或涩味。天然黄芪绝不可能雪白——颜色太白的一定是硫磺熏过的。',comments:[{user:'中药师',text:'黄白色+豆腥味=正品。雪白+没味道+酸味=硫熏。就这么简单'},{user:'老中医',text:'黄芪补气固表是好东西，但硫熏的就变成毒药了，大家一定要闻一闻'}]},
+ taoShiHui:{name:'甘肃野生黄芪切片 500g',price:68,origPrice:128,shop:'小孙药材铺',reviews:[{user:'李**生',text:'切片太白净了，泡水没豆腥味反而有点酸，硫熏嫌疑太大了'},{user:'中**者',text:'正品黄芪应该是黄白色有豆味，这个白得发亮一看就不对'}]},
+ youQuan:{user:'中医爱好者阿明',avatar:'a1',initials:'明',text:'差点上了小孙的当！还好想起老师教的——黄芪要有豆腥味！教大家一招：买黄芪先闻，有豆腥味=正品，没味道+颜色惨白=硫熏货。别光看颜值！（严肃）',comments:[{user:'妈妈',text:'谢谢阿明！一闻豆腥味就对了，记住了'},{user:'群友',text:'我家里那袋黄芪回去赶紧闻闻...'}]},
+ linJu:{name:'甘肃正品黄芪切片团购',price:98,origPrice:138,joined:78,countdown:'剩2天',desc:'自然黄白色，有豆腥味，无硫熏',info:'对比小孙68一斤，正规团购价98以上'}
+},
+{id:9,herb:'当归',real:true,keyClue:'头大身长支根少、断面黄白色、香气浓郁醇厚——岷县道地当归',cardTitle:'岷县道地当归',cardDesc:'归头大归身长支根少、断面黄白油润、香气浓郁醇厚——岷县道地当归',img:'herb_images/herb_当归.jpg',seller:'卖家老郑',sellerDesc:'岷县道地当归来啦！头大身长支根少，掰开黄白色，香气浓郁的不得了！炖鸡汤放半根满屋子都是当归香',
+ chat:[
+  {sender:'群友药师',type:'other',text:'老郑这批当归我帮大家看了一下，教大家怎么认当归：归头要大、归身要长、支根要少，掰开断面黄白色有油亮感，凑近一闻香气浓得盖不住。大家自己对照着看看！'},
+  {sender:'妈妈',type:'other',text:'@儿子 药师的鉴别要点很清晰：归头大、归身长、断面黄白、香气浓。你再帮妈去刷看/淘实惠/友圈/邻聚看看能不能对上？'},
+  {sender:'养生达人老张',type:'other',text:'当归最重要的就是闻——正品当归掰开那个香味浓得咧，满屋子都是。假当归闻起来寡淡无味或者有股怪味。大家买当归一定要先闻一闻、再看断面是不是黄白油润！'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'三分钟学会辨别真假当归',author:'中药讲堂',desc:'正品当归三大特征：①归头大、归身长、支根少（"头大身长"）；②断面黄白色、油润；③香气浓郁醇厚持久。假当归：头小身短支根多，无香气或有怪味。当归最重要的鉴别就是闻——正品当归香气浓郁是任何假货都模仿不了的。',comments:[{user:'执业药师',text:'当归认准两点：闻香气（浓郁醇厚=正品）、看断面（黄白油润=正品）'},{user:'中医学生',text:'岷县是当归的道地产区，头大身长是标志性特征'}]},
+ taoShiHui:{name:'岷县道地当归 500g',price:138,origPrice:198,shop:'老郑药铺',reviews:[{user:'张**娘',text:'掰开香气扑鼻！炖了鸡汤满屋飘香，品质没得说'},{user:'老**医',text:'头大身长支根少，断面黄白油润，正宗岷县货'}]},
+ youQuan:{user:'群友药师',avatar:'a2',initials:'药',text:'老郑这批当归我亲手验的，归头硕大、归身粗长、断面黄白油润、香气浓郁醇厚。大家放心入。',comments:[{user:'妈妈',text:'有药师背书就踏实了！'},{user:'群友',text:'老郑+药师双重保险，已下单'}]},
+ linJu:{name:'岷县道地当归团购',price:118,origPrice:168,joined:120,countdown:'最后6小时',desc:'老郑家的岷县当归，香气浓郁',info:'群友药师推荐，已团120份'}
+},
+{id:10,herb:'燕窝',real:false,keyClue:'泡发后成糊状有胶状物、盏形太完美过于一致、买三送一低价促销——刷胶假燕窝',cardTitle:'印尼进口燕窝',cardDesc:'丝丝分明半透明丝状、泡发率高、有弹性不黏手——天然燕窝特征',img:'herb_images/herb_燕窝.jpg',seller:'卖家丽丽',sellerDesc:'印尼进口燕窝来咯！盏形完整漂亮，泡发率高，买三送一！自己吃养颜，送人有面子～',
+ chat:[
+  {sender:'吃货小美',type:'other',text:'丽丽姐我炖了你家的燕窝，怎么炖出来全是糊糊？而且有胶状的东西...正常燕窝炖完不是丝丝分明的吗？'},
+  {sender:'吃货小美',type:'other',text:'不对啊...我炖了好几次了，每次都糊糊的。而且泡发的时候也怪怪的，水有点黏...'},
+  {sender:'养生达人老张',type:'other',text:'各位群友注意了！燕窝造假最常见的手段就是刷胶——用食用胶刷在燕窝表面增重。刷胶燕窝泡发后水发黏、炖出来不是丝状而是糊状。还有大家注意看，盏形太完整太漂亮的反而不正常——真燕窝盏形不可能每个都一样完美。天然燕窝丝丝分明、半透明丝状、有弹性。大家买燕窝对照这几个特征自己判断！'},
+  {sender:'妈妈',type:'other',text:'@儿子 燕窝太贵了...买到假的亏大了（心疼）。你帮妈去刷看/淘实惠/友圈/邻聚一个个看看怎么挑燕窝'}
+ ],
+ clueTip:'去桌面进入刷看/淘实惠/友圈/邻聚，收集这4个渠道的信息后再回来判断',
+ doneTip:'4个渠道都已查看完毕，请做出判断',
+ shuaKan:{title:'假燕窝的三种常见造假手法',author:'食品安全检测',desc:'假燕窝常见手法：①刷胶增重（食用胶刷在燕窝表面）；②漂白处理（化学剂漂白使颜色均匀）；③用猪皮/银耳/琼脂冒充。鉴别方法：真燕窝泡发后丝丝分明、半透明丝状、有弹性；假燕窝泡发后成糊状、有胶状物、水变黏。',comments:[{user:'检测员',text:'盏形太完美太一致的反而可疑——天然燕窝不可能每个盏都一样'},{user:'营养师',text:'真燕窝泡发后是半透明丝状，炖完丝丝分明；糊状就是刷胶'}]},
+ taoShiHui:{name:'印尼进口燕窝 买三送一',price:888,origPrice:1680,shop:'丽丽滋补品',reviews:[{user:'吃**美',text:'泡发水发黏，炖出来糊糊的，有胶状物，明显刷了胶'},{user:'张**妈',text:'泡发后不是丝状，一捏就碎，真燕窝不会这样'},{user:'营**师',text:'正品燕窝两千起步，这个价格连成本都不够'}]},
+ youQuan:{user:'食品安全老陈',avatar:'a3',initials:'陈',text:'说说燕窝：①真燕窝泡发后丝丝分明、半透明丝状、Q弹有韧性；②有胶状物、一捏就碎、泡发率极低的=刷胶货；③"买三送一"这种促销在真燕窝里几乎没有——好燕窝根本不愁卖。',comments:[{user:'妈妈',text:'学习了！以后买燕窝先泡发看看'},{user:'群友',text:'888三送一想想就是不靠谱...谢谢科普！'}]},
+ linJu:{name:'印尼溯源燕窝团购',price:2280,origPrice:2980,joined:18,countdown:'剩3天',desc:'正规溯源，一码一物，品质保证',info:'对比888买三送一，正规团购价2280反差明显'}
+}
+];
+// ============================================
+// 缩放
+// ============================================
+(function(){var DW=420,DH=812;function rs(){var s=document.getElementById('phone-shell');var sw=window.innerWidth/DW,sh=window.innerHeight/DH;s.style.transform='scale('+Math.min(sw,sh)+')'}window.addEventListener('resize',rs);window.addEventListener('load',rs);setTimeout(rs,100)})();
+
+// ============================================
+// 药材图片
+// ============================================
+var HIMG={'人参':'herb_images/herb_人参.jpg','灵芝':'herb_images/herb_灵芝.jpg','枸杞':'herb_images/herb_枸杞.jpg','三七':'herb_images/herb_三七.jpg','冬虫夏草':'herb_images/herb_冬虫夏草.jpg','石斛':'herb_images/herb_石斛.jpg','天麻':'herb_images/herb_天麻.jpg','黄芪':'herb_images/herb_黄芪.jpg','当归':'herb_images/herb_当归.jpg','燕窝':'herb_images/herb_燕窝.jpg'};
+function herbImg(url,name){return'<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px" alt="'+name+'">'}
+
+
+
+// ============================================
+// 游戏状态
+// ============================================
+var S={level:0,viewed:{shua:false,tao:false,you:false,lin:false},allDone:false,totalOK:0,totalNG:0,consecutiveOK:0,maxConsecutive:0,pulsePlayed:false,dotsRevealed:false,introState:0,deskHintShown:false,firstVisit:{chat:false,shua:false,tao:false,you:false,lin:false},lastRenderedLevel:-1,levelPassed:false,collection:{},newCollections:[],achieves:{}};
+
+function Lv(){return LEVELS[S.level]}
+
+// ============================================
+// 音频管理器（Web Audio API）
+// ============================================
+var AudioManager = (function(){
+  var ctx = null;
+  var bgmPlaying = false;
+  var bgmTimeout = null;
+  var bgmNoteIdx = 0;
+  var sfxMuted = false;
+  var masterGain = null;
+  var bgmGain = null;
+  var sfxGain = null;
+
+  // 五声音阶频率（C4 D4 E4 G4 A4）
+  var PENTA = [261.63, 293.66, 329.63, 392.00, 440.00];
+  var PENTA_HIGH = [523.25, 587.33, 659.25, 783.99, 880.00];
+  var PENTA_LOW = [130.81, 146.83, 164.81, 196.00, 220.00];
+  var BASS_ROOT = 65.41; // C2 持续低音
+  var droneOsc = null;
+  var droneGain = null;
+  var droneFilt = null;
+
+  // 和声：五声音阶索引空间中的五度（音符→五度）
+  var PFIFTH = [3, 4, 0, 1, 2];
+
+  // BGM 旋律 — 富有表现力的五声音阶循环，带节奏与和声提示
+  // r：n=正常，d=附点（延长），s=切分（提前）；h：下方叠加四度
+  var BGM_MELODY = [
+    {n:2, o:'mid', d:0.48, g:0.14, r:'n'},
+    {n:3, o:'mid', d:0.35, g:0.10, r:'n'},
+    {n:4, o:'mid', d:0.58, g:0.18, r:'d', h:1},
+    {n:3, o:'mid', d:0.28, g:0.10, r:'s'},
+    {n:2, o:'mid', d:0.45, g:0.14, r:'n'},
+    {n:1, o:'mid', d:0.35, g:0.10, r:'n'},
+    {n:0, o:'mid', d:0.70, g:0.22, r:'d', h:1},
+    {n:1, o:'mid', d:0.28, g:0.10, r:'s'},
+    {n:2, o:'mid', d:0.48, g:0.14, r:'n'},
+    {n:0, o:'low', d:0.38, g:0.12, r:'n'},
+    {n:1, o:'low', d:0.48, g:0.14, r:'n'},
+    {n:2, o:'low', d:0.62, g:0.20, r:'d', h:1},
+    {n:3, o:'mid', d:0.35, g:0.10, r:'n'},
+    {n:4, o:'mid', d:0.80, g:0.28, r:'d'},
+    {n:2, o:'mid', d:0.48, g:0.14, r:'n'},
+    {n:0, o:'mid', d:0.38, g:0.12, r:'n'},
+    {n:1, o:'mid', d:0.50, g:0.16, r:'n', h:1},
+    {n:2, o:'mid', d:0.28, g:0.10, r:'s'},
+    {n:3, o:'mid', d:0.38, g:0.10, r:'n'},
+    {n:4, o:'high',d:0.48, g:0.14, r:'n'},
+    {n:3, o:'high',d:0.28, g:0.10, r:'s'},
+    {n:2, o:'high',d:0.38, g:0.12, r:'n'},
+    {n:0, o:'high',d:0.62, g:0.22, r:'d', h:1},
+    {n:4, o:'mid', d:0.38, g:0.12, r:'n'},
+    {n:3, o:'mid', d:0.48, g:0.16, r:'n'},
+    {n:2, o:'mid', d:0.38, g:0.10, r:'n'},
+    {n:1, o:'mid', d:0.28, g:0.10, r:'s'},
+    {n:0, o:'mid', d:0.72, g:0.26, r:'d'}
+  ];
+
+  function getCtx(){
+    if(!ctx){
+      ctx = new (window.AudioContext||window.webkitAudioContext)();
+      masterGain = ctx.createGain(); masterGain.gain.value = 1.0;
+      masterGain.connect(ctx.destination);
+      bgmGain = ctx.createGain(); bgmGain.gain.value = 0.32;
+      bgmGain.connect(masterGain);
+      sfxGain = ctx.createGain(); sfxGain.gain.value = 0.7;
+      sfxGain.connect(masterGain);
+    }
+    if(ctx.state==='suspended') ctx.resume();
+    return ctx;
+  }
+
+  function freqFor(noteIdx, oct){
+    if(oct==='high') return PENTA_HIGH[noteIdx];
+    if(oct==='low') return PENTA_LOW[noteIdx];
+    return PENTA[noteIdx];
+  }
+
+  // 丰富音色：正弦+三角波混合，柔和包络与抖动
+  function playBGMNote(freq, durationSec, hasHarmony){
+    var c = getCtx();
+    var t = c.currentTime;
+    var jit = durationSec * (Math.random()*0.16-0.08); // ±8% 节奏抖动
+    var d = durationSec + jit;
+    // 起音：时长的 8-14%，释放：12-20%
+    var atk = d * (0.08 + Math.random()*0.06);
+    var rel = d * (0.12 + Math.random()*0.08);
+    var susStart = t + atk;
+    var susEnd = t + d - rel;
+    var relEnd = t + d;
+
+    // 主音色：正弦 + 三角波混合（65% 正弦，35% 三角 → 温暖）
+    var oscS = c.createOscillator();
+    var oscT = c.createOscillator();
+    var g = c.createGain();
+    oscS.type = 'sine'; oscS.frequency.value = freq;
+    oscT.type = 'triangle'; oscT.frequency.value = freq;
+    // 包络
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.20, susStart);
+    g.gain.setValueAtTime(0.20, susEnd);
+    g.gain.linearRampToValueAtTime(0, relEnd);
+    // 通过每音符混音器连接
+    var mix = c.createGain();
+    oscS.connect(mix); oscT.connect(mix);
+    mix.gain.setValueAtTime(0.8, t); // 正弦部分
+    oscS.connect(g); oscT.connect(g);
+    // 简化处理：两条独立的增益路径
+    var gS = c.createGain(); gS.gain.value = 0.65;
+    var gT = c.createGain(); gT.gain.value = 0.35;
+    oscS.connect(gS); gS.connect(g);
+    oscT.connect(gT); gT.connect(g);
+    g.connect(bgmGain);
+    oscS.start(t); oscS.stop(relEnd+0.03);
+    oscT.start(t); oscT.stop(relEnd+0.03);
+
+    // 和声音符（下方四度或五度）— 微弱
+    if(hasHarmony){
+      var hIdx = PFIFTH[freqIdxForNote(freq)];
+      var hFreq = PENTA_LOW[hIdx]; // 和声在低八度，微弱
+      var hOsc = c.createOscillator();
+      var hG = c.createGain();
+      hOsc.type = 'sine'; hOsc.frequency.value = hFreq;
+      hG.gain.setValueAtTime(0, t);
+      hG.gain.linearRampToValueAtTime(0.07, susStart+0.03);
+      hG.gain.setValueAtTime(0.07, susEnd);
+      hG.gain.linearRampToValueAtTime(0, relEnd);
+      hOsc.connect(hG); hG.connect(bgmGain);
+      hOsc.start(t); hOsc.stop(relEnd+0.03);
+    }
+  }
+
+  // 将频率映射回五声音阶索引
+  function freqIdxForNote(freq){
+    for(var i=0;i<PENTA.length;i++){if(Math.abs(PENTA[i]-freq)<1)return i}
+    for(var i=0;i<PENTA_HIGH.length;i++){if(Math.abs(PENTA_HIGH[i]-freq)<1)return i}
+    for(var i=0;i<PENTA_LOW.length;i++){if(Math.abs(PENTA_LOW[i]-freq)<1)return i}
+    return 0;
+  }
+
+  // 通过 sfxGain 的通用短音效
+  function playTone(freq, startTime, durationSec, gainVal, type){
+    type = type || 'sine';
+    var c = getCtx();
+    var t = (typeof startTime==='number')?startTime:c.currentTime;
+    var osc = c.createOscillator();
+    var g = c.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gainVal, t+0.008);
+    g.gain.setValueAtTime(gainVal, t+durationSec-0.02);
+    g.gain.linearRampToValueAtTime(0, t+durationSec);
+    osc.connect(g); g.connect(sfxGain);
+    osc.start(t); osc.stop(t+durationSec+0.02);
+  }
+
+  // 低音持续：平滑的低音 C2，柔和滤波
+  function startBGMDrone(){
+    var c = getCtx();
+    if(droneOsc) return;
+    droneFilt = c.createBiquadFilter();
+    droneFilt.type = 'lowpass';
+    droneFilt.frequency.value = 180;
+    droneFilt.Q.value = 0.5;
+    droneGain = c.createGain();
+    droneGain.gain.setValueAtTime(0, c.currentTime);
+    droneGain.gain.linearRampToValueAtTime(0.08, c.currentTime+1.5);
+    droneOsc = c.createOscillator();
+    droneOsc.type = 'sine';
+    droneOsc.frequency.value = BASS_ROOT;
+    droneOsc.connect(droneFilt);
+    droneFilt.connect(droneGain);
+    droneGain.connect(bgmGain);
+    droneOsc.start();
+  }
+
+  function stopBGMDrone(){
+    if(!droneOsc) return;
+    var c = getCtx();
+    droneGain.gain.linearRampToValueAtTime(0, c.currentTime+0.6);
+    var dOsc = droneOsc, dG = droneGain, dF = droneFilt;
+    setTimeout(function(){dOsc.stop();dOsc.disconnect();dG.disconnect();dF.disconnect()},700);
+    droneOsc = null; droneGain = null; droneFilt = null;
+  }
+
+  function scheduleBGMNote(){
+    if(!bgmPlaying) return;
+    var note = BGM_MELODY[bgmNoteIdx];
+    var freq = freqFor(note.n, note.o);
+    var hasH = !!note.h;
+    playBGMNote(freq, note.d, hasH);
+    // 切分：将下一个音符提前约间隙的 15%
+    var gapScale = 1.0;
+    if(note.r==='d') gapScale = 1.35; // 附点 — 较长间隙
+    else if(note.r==='s') gapScale = 0.55; // 切分 — 较短间隙
+    var wait = (note.d + note.g * gapScale) * 1000;
+    // 添加 ±10% 随机节奏抖动
+    wait *= (0.90 + Math.random()*0.20);
+    bgmNoteIdx = (bgmNoteIdx+1)%BGM_MELODY.length;
+    bgmTimeout = setTimeout(scheduleBGMNote, wait);
+  }
+
+  // ---- 公共 API ----
+
+  function startBGM(){
+    if(bgmPlaying) return;
+    getCtx();
+    bgmPlaying = true;
+    bgmNoteIdx = 0;
+    startBGMDrone();
+    scheduleBGMNote();
+    updateMusicBtn();
+  }
+
+  function stopBGM(){
+    bgmPlaying = false;
+    if(bgmTimeout){clearTimeout(bgmTimeout);bgmTimeout=null}
+    stopBGMDrone();
+    updateMusicBtn();
+  }
+
+  function toggleBGM(){
+    if(bgmPlaying){stopBGM()}else{startBGM()}
+  }
+
+  function updateMusicBtn(){
+    var btn = document.getElementById('desk-music-btn');
+    if(!btn) return;
+    if(bgmPlaying){btn.textContent='\uD83D\uDD0A';btn.classList.remove('muted')}
+    else{btn.textContent='\uD83D\uDD07';btn.classList.add('muted')}
+  }
+
+  // ---- 音效预设 ----
+
+  function messagePop(noteIdx){
+    // 基于 idx 选用不同五声音符，避免单调
+    var ni = noteIdx % 5;
+    var freq = PENTA_HIGH[ni];
+    var c = getCtx(); var t = c.currentTime;
+    var osc = c.createOscillator(); var g = c.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.35, t+0.006);
+    g.gain.exponentialRampToValueAtTime(0.001, t+0.10);
+    osc.connect(g); g.connect(sfxGain);
+    osc.start(t); osc.stop(t+0.12);
+  }
+
+  function correctChime(){
+    var c = getCtx(); var t = c.currentTime;
+    var notes = [PENTA[0], PENTA[2], PENTA[4]];
+    for(var i=0;i<3;i++){
+      playTone(notes[i], t+i*0.09, 0.18, 0.3, 'triangle');
+    }
+  }
+
+  function wrongBuzz(){
+    var c = getCtx(); var t = c.currentTime;
+    playTone(PENTA[1]*0.9, t, 0.12, 0.25, 'square');
+    playTone(PENTA_LOW[0]*0.85, t+0.10, 0.20, 0.25, 'square');
+  }
+
+  function buttonClick(){
+    var c = getCtx(); var t = c.currentTime;
+    var osc = c.createOscillator(); var g = c.createGain();
+    osc.type = 'square'; osc.frequency.value = 800;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.15, t+0.003);
+    g.gain.exponentialRampToValueAtTime(0.001, t+0.04);
+    osc.connect(g); g.connect(sfxGain);
+    osc.start(t); osc.stop(t+0.05);
+  }
+
+  function levelComplete(){
+    var c = getCtx(); var t = c.currentTime;
+    var fanfare = [PENTA[0], PENTA[2], PENTA[4], PENTA_HIGH[0], PENTA_HIGH[2]];
+    var durs = [0.12, 0.10, 0.12, 0.12, 0.30];
+    var gaps = [0.08, 0.08, 0.08, 0.08, 0];
+    var delay = 0;
+    for(var i=0;i<fanfare.length;i++){
+      playTone(fanfare[i], t+delay, durs[i], 0.28, 'triangle');
+      delay += durs[i]+gaps[i];
+    }
+  }
+
+  function achievementBell(){
+    var c = getCtx(); var t = c.currentTime;
+    // 两个闪烁的铃音
+    playTone(PENTA_HIGH[2], t, 0.30, 0.22, 'sine');
+    playTone(PENTA_HIGH[3]*1.01, t+0.05, 0.28, 0.18, 'sine');
+    playTone(PENTA_HIGH[4], t+0.30, 0.40, 0.25, 'sine');
+    playTone(PENTA_HIGH[2]*1.005, t+0.35, 0.38, 0.20, 'sine');
+  }
+
+  function appSwoosh(){
+    var c = getCtx(); var t = c.currentTime;
+    // 类噪音扫频：低通滤波的方波扫频
+    var osc = c.createOscillator();
+    var g = c.createGain();
+    var filter = c.createBiquadFilter();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, t);
+    osc.frequency.linearRampToValueAtTime(1200, t+0.15);
+    filter.type = 'lowpass'; filter.frequency.value = 600;
+    filter.frequency.linearRampToValueAtTime(2000, t+0.15);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.06, t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t+0.18);
+    osc.connect(filter); filter.connect(g); g.connect(sfxGain);
+    osc.start(t); osc.stop(t+0.20);
+  }
+
+  function victoryFanfare(){
+    var c = getCtx(); var t = c.currentTime;
+    var melody = [
+      {f:PENTA[0], d:0.15},{f:PENTA[2], d:0.12},{f:PENTA[4], d:0.15},
+      {f:PENTA_HIGH[0], d:0.12},{f:PENTA_HIGH[2], d:0.15},
+      {f:PENTA_HIGH[4], d:0.25},{f:PENTA_HIGH[2], d:0.12},{f:PENTA_HIGH[0], d:0.15},
+      {f:PENTA[4], d:0.12},{f:PENTA_HIGH[0], d:0.40}
+    ];
+    var delay=0;
+    for(var i=0;i<melody.length;i++){
+      playTone(melody[i].f, t+delay, melody[i].d, i===melody.length-1?0.35:0.25, 'triangle');
+      delay += melody[i].d+0.06;
+    }
+  }
+
+  return {
+    startBGM: startBGM,
+    stopBGM: stopBGM,
+    toggleBGM: toggleBGM,
+    sfx: {
+      messagePop: messagePop,
+      correct: correctChime,
+      wrong: wrongBuzz,
+      buttonClick: buttonClick,
+      levelComplete: levelComplete,
+      achievement: achievementBell,
+      appSwitch: appSwoosh,
+      victory: victoryFanfare
+    }
+  };
+})();
+
+// ============================================
+// 时间与日期
+// ============================================
+function updTime(){
+  var d=new Date();var h=d.getHours().toString().padStart(2,'0'),m=d.getMinutes().toString().padStart(2,'0');
+  document.getElementById('stime').textContent=h+':'+m;
+  document.getElementById('desk-time').textContent=h+':'+m;
+}
+function updDate(){
+  var d=new Date(),wdays=['日','一','二','三','四','五','六'];
+  document.getElementById('desk-date').textContent=(d.getMonth()+1)+'月'+d.getDate()+'日 星期'+wdays[d.getDay()];
+}
+
+// ============================================
+// 桌面角标与圆点
+// ============================================
+function updateDesktopIndicators(){
+  var v=S.viewed,vcount=(v.shua?1:0)+(v.tao?1:0)+(v.you?1:0)+(v.lin?1:0);
+  var redB=document.getElementById('dbadge-chat-red'),greenB=document.getElementById('dbadge-chat-green');
+  if(S.level>=LEVELS.length){redB.style.display='none';greenB.style.display='none';return}
+  if(vcount>=4){redB.style.display='none';greenB.style.display='flex'}
+  else{redB.style.display='flex';greenB.style.display='none'}
+  var apps=['shua','tao','you','lin'];
+  for(var i=0;i<apps.length;i++){
+    var a=apps[i],d=document.getElementById('ddot-'+a),dd=document.getElementById('dockdot-'+a),icon=document.getElementById('dicon-'+a);
+    if(S.dotsRevealed&&!v[a]){d.classList.add('show');d.classList.add('dot-pop');if(dd){dd.classList.add('show');dd.classList.add('dot-pop')}if(icon)icon.classList.add('highlight')}
+    else{d.classList.remove('show');d.classList.remove('dot-pop');if(dd){dd.classList.remove('show');dd.classList.remove('dot-pop')}if(icon)icon.classList.remove('highlight')}
+  }
+}
+
+// ============================================
+// 导航
+// ============================================
+function goApp(name){
+  AudioManager.sfx.appSwitch();
+  // 桌面缩小退出
+  var desk=document.getElementById('desktop');
+  desk.style.opacity='0';desk.style.transform='scale(0.95)';
+  setTimeout(function(){
+    desk.style.display='none';
+    hideAllApps();
+    var el=document.getElementById('app-'+name);if(el)el.classList.add('show');
+    if(name==='chat'){
+      if(S.levelPassed){
+        if(S.level>=LEVELS.length-1){S.level=LEVELS.length;showEnd();return}
+        var setLv=Lv();if(setLv){
+          var setOk=S.lastJudgmentCorrect;
+          document.getElementById('chat-body').innerHTML='<div style="text-align:center;padding:40px 16px;opacity:0;transition:opacity 0.5s ease" id="chat-settlement">'+
+            '<div style="font-size:48px;margin-bottom:12px">'+(setOk?'\u2705':'\u274C')+'</div>'+
+            '<div style="font-size:18px;font-weight:700;color:'+(setOk?'#34C759':'#FF3B30')+';margin-bottom:8px">'+(setOk?'鉴别正确！':'鉴别失败')+'</div>'+
+            '<div style="font-size:14px;color:#8E8E93;margin-bottom:16px">'+setLv.herb+' - '+(setLv.real?'真品':'假货')+'</div>'+
+            '<div style="max-width:300px;margin:0 auto 24px auto">'+
+            '<div style="background:'+(setOk?'rgba(52,199,89,0.08)':'rgba(255,59,48,0.08)')+';border-radius:12px;padding:16px;text-align:left;font-size:13px;line-height:1.7;color:#1C1C1E">'+
+            '<b>鉴别关键：</b>'+setLv.keyClue+'</div></div>'+
+            '<button onclick="event.stopPropagation();AudioManager.sfx.buttonClick();advanceLevel()" style="display:block;width:200px;margin:0 auto 10px;padding:12px 0;background:#34C759;color:#FFF;border:none;border-radius:24px;font-size:15px;font-weight:600;cursor:pointer">进入下一关</button>'+
+            +(setOk?'<button onclick="event.stopPropagation();AudioManager.sfx.buttonClick();openCollection()" style="display:block;width:200px;margin:0 auto 10px;padding:12px 0;background:rgba(52,199,89,0.15);color:#34C759;border:1px solid rgba(52,199,89,0.3);border-radius:24px;font-size:14px;font-weight:500;cursor:pointer">已收入图鉴</button>':'')+
+            '<button onclick="event.stopPropagation();AudioManager.sfx.buttonClick();goDesktop()" style="display:block;width:200px;margin:0 auto;padding:12px 0;background:rgba(255,255,255,0.08);color:#8E8E93;border:none;border-radius:24px;font-size:14px;font-weight:400;cursor:pointer">返回桌面</button>'+
+            '</div>';
+          S.lastRenderedLevel=-1;
+          setTimeout(function(){var s=document.getElementById('chat-settlement');if(s)s.style.opacity='1'},100);
+          return;
+        }
+      }
+      var needsRender=(S.level!==S.lastRenderedLevel)||(typeof wasFirst!=='undefined'?wasFirst:true);
+      if(needsRender)renderChat();
+      else updateChatBottom();
+    }
+    // 应用内容卡片交错动画
+    setTimeout(function(){
+      var cards=document.querySelectorAll('#app-'+name+' .video-card,#app-'+name+' .shop-item,#app-'+name+' .moment-card,#app-'+name+' .group-card,#app-'+name+' .shop-review,#app-'+name+' .video-comment,#app-'+name+' .moment-comment,#app-'+name+' .group-detail,#app-'+name+' .search-bar,#app-'+name+' .group-header');
+      for(var ci=0;ci<cards.length;ci++){(function(j){setTimeout(function(){cards[j].classList.add('card-show')},j*120)})(ci)}
+    },50)
+  });
+  if(name==='chat'){
+    var icon=document.getElementById('dicon-chat');if(icon)icon.classList.remove('pulse');
+    var wasFirst=!S.firstVisit.chat;
+    if(wasFirst){if(!S.dotsRevealed){S.dotsRevealed=true;updateDesktopIndicators()}}
+  }
+  else if(name==='shua'){renderShuaKan();showAppToast('shua','这里有个科普视频，看看专家怎么说')}
+  else if(name==='tao'){renderTaoShiHui();showAppToast('tao','对比价格和评价，判断是不是正规渠道')}
+  else if(name==='you'){renderYouQuan();showAppToast('you','朋友圈有人讨论这个药材，看看大家怎么说')}
+  else if(name==='lin'){renderLinJu();showAppToast('lin','社区团购也在卖这个，价格合适吗？')}
+}
+function goDesktop(){
+  var desk=document.getElementById('desktop');
+  desk.style.display='flex';desk.style.opacity='0';desk.style.transform='scale(0.95)';
+  hideAllApps();
+  requestAnimationFrame(function(){desk.style.opacity='1';desk.style.transform='scale(1)';animateDesktopEnter()});
+  updateDesktopIndicators();if(S.dotsRevealed)showDesktopHint()
+}
+function advanceLevel(){
+  AudioManager.sfx.levelComplete();
+  S.level++;S.viewed={shua:false,tao:false,you:false,lin:false};
+  S.allDone=false;S.levelPassed=false;S.lastRenderedLevel=-1;
+  S.firstVisit={chat:false,shua:false,tao:false,you:false,lin:false};
+  S.deskHintShown=false;
+  if(S.level>0)S.dotsRevealed=true;
+  updateDesktopIndicators();
+  var cj=document.getElementById('chat-judge');if(cj)cj.classList.remove('show');
+  var cc=document.getElementById('chat-clue-bar');if(cc)cc.style.display='none';
+  var jh=document.getElementById('judge-hint');if(jh)jh.classList.remove('show');
+  renderChat();
+}
+function hideAllApps(){
+  var apps=document.querySelectorAll('.app-page');for(var i=0;i<apps.length;i++)apps[i].classList.remove('show');
+}
+function markAndGoDesktop(name){
+  if(!S.viewed[name]){S.viewed[name]=true;updateDesktopIndicators();checkAllDone()}
+  goDesktop();
+}
+
+// ============================================
+// 检查全部已查看
+// ============================================
+function checkAllDone(){
+  var v=S.viewed;
+  if(v.shua&&v.tao&&v.you&&v.lin){S.allDone=true;if(document.getElementById('app-chat').classList.contains('show'))updateChatBottom()}
+}
+function allViewed(){return S.viewed.shua&&S.viewed.tao&&S.viewed.you&&S.viewed.lin}
+
+
+var CHAT_AVATARS={"妈妈":"herb_images/avatar_妈妈.png","小姨":"herb_images/avatar_小姨.png","养生达人老张":"herb_images/avatar_养生达人老张.png","自己":"herb_images/avatar_自己.png"};
+// 头像配色方案（基于哈希分配）
+var AVATAR_COLORS=['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F','#BB8FCE','#85C1E9','#F8C471','#82E0AA','#F1948A','#73C6B6','#AED6F1'];
+function getAvatarHTML(sender){
+  var av=CHAT_AVATARS[sender];
+  if(av)return '<img class="msg-avatar" src="'+av+'" onerror="this.style.display=\'none\'">';
+  // 生成默认头像（彩色圆形上显示姓氏汉字）
+  var hash=0;for(var hi=0;hi<sender.length;hi++)hash=sender.charCodeAt(hi)+((hash<<5)-hash);hash=Math.abs(hash);
+  var color=AVATAR_COLORS[hash%AVATAR_COLORS.length];
+  var lastChar=sender.charAt(sender.length-1);
+  return '<div class="msg-avatar msg-avatar-text" style="background:'+color+'">'+lastChar+'</div>';
+}
+// ============================================
+// 渲染聊天
+// ============================================
+function renderChat(){
+  var lv=Lv();if(!lv)return;
+  // 卖家信息栏
+  var sib=document.getElementById('seller-info-bar');
+  if(lv.seller){
+    sib.style.display='block';
+    sib.querySelector('.sib-img').innerHTML=herbImg(lv.img,lv.herb);
+    sib.querySelector('.sib-name').innerHTML=lv.seller+'<span class="sib-badge">卖家消息</span>';
+    sib.querySelector('.sib-desc').textContent=lv.sellerDesc;
+  }else{
+    sib.style.display='none';
+  }
+  var html='';var msgs=lv.chat;
+  for(var i=0;i<msgs.length;i++){
+    var m=msgs[i],isVoice=/^\[语音\]\s*\d+"/.test(m.text);
+    html+='<div class="msg-row '+m.type+(isVoice?' voice-msg':'')+'">';
+    if(m.type!=='system'){html+='<div class="msg-avatar-wrap">'+getAvatarHTML(m.sender)+'<div class="msg-sender">'+m.sender+'</div></div>'}
+    if(isVoice){
+      var voDur=m.text.replace(/^\[语音\]\s*/,'');
+      html+='<div class="msg-bubble voice"><div class="voice-icon"></div><span style="font-size:13px;color:#1A6FC4">语音消息</span><span class="voice-dur">'+voDur+'</span></div></div>';
+      if(m.voiceText){
+        html+='<div class="msg-row '+m.type+' voice-trans"><div class="msg-avatar-wrap"></div><div class="msg-bubble" style="background:rgba(232,244,253,0.4);font-size:13px;color:#555;border-radius:10px;padding:8px 12px">'+m.voiceText+'</div></div>';
+      }
+    }else{
+      html+='<div class="msg-bubble">'+m.text+'</div></div>';
+    }
+  }
+  // 药材卡片
+  var kcParts=lv.keyClue.split('——');
+  var kcTitle=kcParts.length>1?kcParts[1]:'鉴别特征';
+  var kcDetail=kcParts[0];
+  html+='<div class="msg-row other"><div class="msg-avatar-wrap">'+getAvatarHTML('妈妈')+'<div class="msg-sender">妈妈</div></div><div class="msg-bubble">';
+  html+='<div class="herb-card">';
+  html+='<div class="hc-header"><div class="hc-img">'+herbImg(lv.img,lv.herb)+'</div>';
+  html+='<span class="hc-name">'+lv.cardTitle+'</span></div>';
+  html+='<div class="hc-desc">'+lv.cardDesc+'</div>';
+  html+='<div class="hc-detail"><div class="hc-detail-title">'+kcTitle+'</div><div class="hc-detail-text">'+kcDetail+'</div></div>';
+  html+='<div class="hc-tip">← 去桌面，进入 4 个 App 收集线索后再回来判断</div></div></div></div>';
+  document.getElementById('chat-body').innerHTML=html;
+  S.lastRenderedLevel=S.level;
+  // 辅助：聊天区域瞬间滚动到底部
+  function sc(){var e=document.getElementById('chat-body');e.style.scrollBehavior='auto';e.scrollTop=e.scrollHeight}
+  // 消息逐条显示
+  var rows=document.querySelectorAll('#chat-body .msg-row');
+  var lastSender='';
+  function revealRows(idx){
+    if(idx>=rows.length){
+      var hc=document.querySelector('#chat-body .herb-card');
+      if(hc){hc.classList.add('bounce-in')}
+      setTimeout(function(){
+        updateChatBottom();
+        var e=document.getElementById('chat-body');e.scrollTop=e.scrollHeight;
+        if(!S.firstVisit.chat){S.firstVisit.chat=true;setTimeout(showFirstVisitHints,500)}
+      },400);
+      return;
+    }
+    var row=rows[idx],sender='';
+    var se=row.querySelector('.msg-sender');if(se)sender=se.textContent;
+    if(idx===0){
+      row.style.transition='none';
+      row.classList.add('msg-show');
+      row.offsetHeight;
+      row.style.transition='opacity 0.4s ease-out, transform 0.4s ease-out';
+      setTimeout(function(){revealRows(1)},120);
+      lastSender=sender;return;
+    }
+    var base=300+idx*120;
+    if(row.classList.contains('system')){base+=200}
+    else{
+      var msgTxt=row.querySelector('.msg-bubble');
+      var txtLen=msgTxt?msgTxt.textContent.length:0;
+      if(txtLen<12)base-=50;
+      else if(txtLen>35)base+=100;
+      if(row.classList.contains('voice-msg'))base+=80;
+      if(row.classList.contains('voice-trans'))base+=700;
+      if(idx>0&&sender!==lastSender)base+=80;
+      if(idx===rows.length-1)base+=120;
+    }
+    base=Math.max(250,base);
+    row.style.transition='opacity 0.4s ease-out, transform 0.4s ease-out';
+    rows[idx].classList.add('msg-show');
+    AudioManager.sfx.messagePop(idx);
+    if(idx>=3){
+      var e=document.getElementById('chat-body');
+      var rb=row.offsetTop+row.offsetHeight;
+      var vb=e.scrollTop+e.clientHeight;
+      if(rb>vb-12){e.scrollTop=rb-e.clientHeight+12}
+    }
+    setTimeout(function(){revealRows(idx+1)},base);
+    lastSender=sender;
+  }
+  revealRows(0);
+}
+function showFirstVisitHints(){
+  var b=document.getElementById('chat-body');
+  var h='';
+  h+='<div class="msg-row other" id="chat-first-hint"><div class="msg-avatar-wrap">'+getAvatarHTML('妈妈')+'<div class="msg-sender">妈妈</div></div><div class="msg-bubble voice"><div class="voice-icon"></div><span style="font-size:13px;color:#1A6FC4">语音消息</span><span class="voice-dur">12"</span></div></div>';
+  h+='<div class="msg-row other" id="chat-hint-mom"><div class="msg-avatar-wrap">'+getAvatarHTML('妈妈')+'<div class="msg-sender">妈妈</div></div><div class="msg-bubble chat-hint-bubble" style="margin-top:4px">儿啊，这个商家说得可好了，你看看靠不靠谱</div></div>';
+  h+='<div class="msg-row other" id="chat-hint-aunt"><div class="msg-avatar-wrap">'+getAvatarHTML('小姨')+'<div class="msg-sender">小姨</div></div><div class="msg-bubble chat-hint-bubble" style="background:#FFF0F0;color:#B91C1C">上次我买的那个就是假的，吃了拉肚子，这次你可得好好看看</div></div>';
+  h+='<div class="msg-row system" id="chat-sys-hint"><div class="msg-bubble chat-hint-sys">返回桌面，去刷看/淘实惠/友圈/邻聚查看相关信息</div></div>';
+  b.insertAdjacentHTML('beforeend',h);
+  var hrs=b.querySelectorAll('#chat-first-hint,#chat-hint-mom,#chat-hint-aunt,#chat-sys-hint');
+  var dl=[220,400,560,740];
+  for(var i=0;i<hrs.length;i++){(function(j){setTimeout(function(){hrs[j].classList.add('msg-show');var e=document.getElementById('chat-body');e.scrollTo({top:e.scrollHeight,behavior:'smooth'})},dl[j])})(i)}
+}
+function updateChatBottom(){
+  var lv=Lv();if(!lv)return;
+  var bar=document.getElementById('chat-clue-bar'),judge=document.getElementById('chat-judge'),jHint=document.getElementById('judge-hint');
+  var v=S.viewed,vcount=(v.shua?1:0)+(v.tao?1:0)+(v.you?1:0)+(v.lin?1:0);
+  if(vcount>=4){
+    bar.className='done';bar.style.display='block';bar.textContent='线索收集完毕！请根据以上信息，判断这味药材的真伪';
+    judge.classList.add('show');
+    if(jHint){jHint.textContent='线索已齐！判断这味药材是真品还是假货';jHint.classList.add('show')}
+    setTimeout(function(){var br=document.querySelector('#chat-judge .btn-real');if(br)br.classList.add('btn-slide');var bf=document.querySelector('#chat-judge .btn-fake');if(bf)bf.classList.add('btn-slide')},50)
+  }else{
+    bar.className='show';bar.style.display='block';
+    var missing=[];
+    if(!v.shua)missing.push('刷看');if(!v.tao)missing.push('淘实惠');
+    if(!v.you)missing.push('友圈');if(!v.lin)missing.push('邻聚');
+    bar.textContent='已查看 '+vcount+'/4 个渠道，还需查看 '+missing.join('、')+' — 返回桌面进入对应 App';
+    judge.classList.remove('show');
+    if(jHint)jHint.classList.remove('show');
+  }
+}
+
+// ============================================
+// 渲染其他应用
+// ============================================
+function renderShuaKan(){
+  var lv=Lv(),c=lv.shuaKan;if(!lv||!c)return;
+  var html='<div class="video-hero" id="video-hero" onclick="event.stopPropagation();videoPlayer.toggle()"><canvas id="video-canvas" width="408" height="220" style="width:100%;height:100%;display:block;border-radius:14px"></canvas><div class="v-play" id="v-play-btn" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5"></div><div class="v-progress" id="v-progress" style="position:absolute;bottom:8px;left:16px;right:16px;height:3px;background:rgba(255,255,255,0.2);border-radius:2px;z-index:5"><div id="v-progress-fill" style="height:100%;background:#34C759;border-radius:2px;width:0%;transition:width 0.1s linear"></div></div><div class="v-time" id="v-time" style="position:absolute;bottom:14px;right:16px;color:rgba(255,255,255,0.7);font-size:10px;z-index:5;font-family:system-ui,sans-serif">0:00/0:15</div></div>';
+  html+='<div class="video-card"><span style="display:inline-block;background:#FFF3CD;color:#856404;font-size:10px;padding:2px 8px;border-radius:4px;margin-bottom:8px;font-weight:600">[线索] 科普视频</span>';
+  html+='<h3>'+c.title+'</h3><div class="vc-author">@'+c.author+'</div><p>'+c.desc+'</p>';
+  html+='<div class="vc-stats"><span>112万播放</span><span>3.2万点赞</span><span>1.8万评论</span></div></div>';
+  if(c.comments){
+    html+='<div class="video-comment"><div style="font-weight:600;color:#999;margin-bottom:4px;font-size:10px">热评</div>';
+    for(var i=0;i<c.comments.length;i++){html+='<div style="margin-bottom:2px"><b>'+c.comments[i].user+'</b>：'+c.comments[i].text+'</div>'}
+    html+='</div>';
+  }
+  document.getElementById('body-shua').innerHTML=html;
+  // DOM 更新后初始化视频播放器
+  setTimeout(function(){videoPlayer.init()},100);
+}
+function renderTaoShiHui(){
+  var lv=Lv(),c=lv.taoShiHui;if(!lv||!c)return;
+  var html='<div class="search-bar">搜索 "'+lv.herb+'" 的商品...</div>';
+  html+='<div class="shop-item"><div class="si-img">'+herbImg(lv.img,lv.herb)+'</div><div class="si-info">';
+  html+='<div class="si-name">'+c.name+'</div>';
+  html+='<div class="si-price">&yen;'+c.price+'<span class="si-ori">&yen;'+c.origPrice+'</span></div>';
+  html+='<div class="si-stars">店铺：'+c.shop+'</div></div></div>';
+  for(var i=0;i<c.reviews.length;i++){
+    html+='<div class="shop-review"><b>'+c.reviews[i].user+'</b><span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;margin:0 4px">[线索]</span>'+c.reviews[i].text+'</div>';
+  }
+  document.getElementById('body-tao').innerHTML=html;
+}
+function renderYouQuan(){
+  var lv=Lv(),c=lv.youQuan;if(!lv||!c)return;
+  var html='<div class="moment-card"><div class="mc-header"><div class="mc-avatar '+c.avatar+'">'+c.initials+'</div>';
+  html+='<div><div class="mc-uname">'+c.user+'</div><div class="mc-time">2小时前</div></div></div>';
+  html+='<div class="mc-text"><span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;margin-right:4px">[线索]</span>'+c.text+'</div>';
+  html+='<img src="'+lv.img+'" class="mc-post-img" onerror="this.style.display=\'none\'">';
+  html+='<div class="mc-actions"><span>328 赞</span><span>56 评论</span></div></div>';
+  if(c.comments){
+    html+='<div class="moment-comment">';
+    for(var i=0;i<c.comments.length;i++){html+='<div><b>'+c.comments[i].user+'</b>：'+c.comments[i].text+'</div>'}
+    html+='</div>';
+  }
+  document.getElementById('body-you').innerHTML=html;
+}
+function renderLinJu(){
+  var lv=Lv(),c=lv.linJu;if(!lv||!c)return;
+  var html='<div class="group-header">附近的团购 · 搜索 "'+lv.herb+'"</div>';
+  html+='<div class="group-card"><div class="gc-img">'+herbImg(lv.img,lv.herb)+'</div><div class="gc-info">';
+  html+='<div class="gc-name">'+c.name+'</div>';
+  html+='<div class="gc-price">&yen;'+c.price+'<span class="gc-ori">&yen;'+c.origPrice+'</span></div>';
+  html+='<div class="gc-meta"><span>已团<span class="gc-count">'+c.joined+'</span>份</span><span>'+c.countdown+'</span></div>';
+  html+='<div style="font-size:10px;color:var(--gray);margin-top:4px"><span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;margin-right:4px">[线索]</span>'+c.info+'</div>';
+  html+='</div></div>';
+  if(c.desc){html+='<div class="group-detail"><div class="gd-title">商品详情</div>'+c.desc+'</div>'}
+  document.getElementById('body-lin').innerHTML=html;
+}
+
+// ============================================
+// 判断
+// ============================================
+function judge(ans){
+  var lv=Lv();var ok=(ans===lv.real);
+  S.levelPassed=true;
+  if(ok){S.totalOK++;AudioManager.sfx.correct()}else{S.totalNG++;AudioManager.sfx.wrong()}
+  var icon=document.getElementById('rm-icon'),title=document.getElementById('rm-title'),msg=document.getElementById('rm-msg');
+  var kc=document.getElementById('rm-keyclue'),kcText=lv.keyClue||'';
+  if(ok){
+    icon.innerHTML='&#9989;';icon.style.color='#34C759';
+    title.textContent='判断正确！';
+    if(kc)kc.innerHTML='答对了！关键线索：<b>'+kcText+'</b>';
+    var i=S.level;
+    if(i<=2)msg.textContent='妈妈半信半疑："真的假的？你确定？我再去看看……"';
+    else if(i<=5)msg.textContent='妈妈松口气："还好你帮我看了，不然又要被骗"';
+    else if(i<=8)msg.textContent='妈妈感慨："这些卖假药的太可恶了，以后要多听你的"';
+    else msg.textContent='妈妈笑着说："幸亏有你，不然我的退休金都被骗光了"';
+  }else{
+    icon.innerHTML='&#10060;';icon.style.color='#FF3B30';
+    title.textContent='判断错误！';
+    if(kc)kc.innerHTML='可惜！破绽：<b>'+kcText+'</b>';
+    msg.textContent='妈妈失望地说："唉，这次你也没看出来……我们都被骗了"';
+  }
+  document.getElementById('result-modal').classList.add('show');
+}
+
+// ============================================
+// 下一关
+// ============================================
+function nextLevel(){
+  document.getElementById('result-modal').classList.remove('show');
+  var prevPassed=S.levelPassed;
+  S.level++;S.viewed={shua:false,tao:false,you:false,lin:false};S.allDone=false;
+  S.firstVisit={chat:false,shua:false,tao:false,you:false,lin:false};S.deskHintShown=false;
+  S.levelPassed=false;S.lastRenderedLevel=-1;
+  if(prevPassed)S.dotsRevealed=true;else S.dotsRevealed=false;
+  updateDesktopIndicators();
+  // 优化3：新关卡桌面平滑动画
+  animateDesktopEnter();
+  document.getElementById('chat-judge').classList.remove('show');
+  document.getElementById('chat-clue-bar').style.display='none';
+  var jHint=document.getElementById('judge-hint');if(jHint)jHint.classList.remove('show');
+  if(S.level>=LEVELS.length){AudioManager.sfx.victory();showEnd();return}
+  if(document.getElementById('app-chat').classList.contains('show'))renderChat();
+  startPulse();
+}
+
+// ============================================
+// 桌面入场动画（可复用）
+// ============================================
+function animateDesktopEnter(){
+  var desk=document.getElementById('desktop');
+  if(desk){desk.style.transition='none';desk.style.opacity='1';desk.style.transform='scale(1)';requestAnimationFrame(function(){desk.style.transition=''})}
+  var dock=document.getElementById('dock-bar');
+  if(dock){dock.classList.remove('dock-enter','dock-animated');void dock.offsetWidth;dock.classList.add('dock-enter');requestAnimationFrame(function(){dock.classList.add('dock-animated')})}
+  var icons=document.querySelectorAll('#desktop .desk-icon');
+  for(var i=0;i<icons.length;i++){(function(j){icons[j].classList.remove('icon-enter','icon-animated');void icons[j].offsetWidth;icons[j].classList.add('icon-enter');setTimeout(function(){icons[j].classList.add('icon-animated')},80+50*j)})(i)}
+  var dt=document.getElementById('desk-time');if(dt){dt.classList.remove('desk-show');setTimeout(function(){dt.classList.add('desk-show')},50)}
+  var dd=document.getElementById('desk-date');if(dd){dd.classList.remove('desk-show');setTimeout(function(){dd.classList.add('desk-show')},100)}
+}
+
+// ============================================
+// 结束画面
+// ============================================
+function showEnd(){
+  AudioManager.sfx.victory();
+  var tot=LEVELS.length,ok=S.totalOK,ng=S.totalNG,rate=Math.round(ok/tot*100);
+  var clen=Object.keys(S.collection).length;
+  var rating,ratingColor,ratingEmoji;
+  if(rate>=90){rating='火眼金睛';ratingColor='#FF9500';ratingEmoji='\uD83D\uDC41\uFE0F';}
+  else if(rate>=70){rating='明察秋毫';ratingColor='#34C759';ratingEmoji='\u2B50';}
+  else if(rate>=50){rating='尚需磨练';ratingColor='#007AFF';ratingEmoji='\uD83D\uDEE1\uFE0F';}
+  else{rating='任重道远';ratingColor='#FF3B30';ratingEmoji='\uD83C\uDF31';}
+
+  var momMsg='';
+  if(rate>=90) momMsg='妈妈彻底醒悟了："这些养生群里的卖家，没几个靠谱的。以后买药材，我得先去正规药店！"<br>她删掉了好几个养生推销群。';
+  else if(rate>=70) momMsg='妈妈变得谨慎了很多："看来不能随便相信群里的推销。不过有些真药材还是可以买的……"<br>她开始学着在买之前先查资料。';
+  else if(rate>=50) momMsg='妈妈半信半疑："有的真的有的假的，我也分不太清。以后还是少买吧……"<br>她减少了购买频率，但偶尔还是会忍不住下手。';
+  else momMsg='妈妈叹着气："现在的假药材太多了……"<br>她依然活跃在各个养生群里，继续买各种"神药"。';
+
+  // 成就徽章
+  var badges=[],hasCollector=false,hasSharpshooter=false,hasStreak=false,hasAllCorrect=false;
+  if(clen>=8){hasCollector=true;badges.push({icon:'\uD83D\uDCC1',label:'收藏大师',desc:'图鉴收集8+种',unlocked:true});}
+  else if(clen>=5){badges.push({icon:'\uD83D\uDCC1',label:'收藏达人',desc:'图鉴收集5+种',unlocked:true});}
+  else{badges.push({icon:'\uD83D\uDCC1',label:'收藏新秀',desc:'图鉴收集5+种',unlocked:false});}
+  if(rate>=90){hasAllCorrect=true;badges.push({icon:'\uD83C\uDFAF',label:'百发百中',desc:'正确率90%+',unlocked:true});}
+  else if(rate>=80){badges.push({icon:'\uD83C\uDFAF',label:'神射手',desc:'正确率80%+',unlocked:true});}
+  else{badges.push({icon:'\uD83C\uDFAF',label:'神射手',desc:'正确率80%+',unlocked:false});}
+  if(S.maxConsecutive>=5){hasStreak=true;badges.push({icon:'\uD83D\uDD25',label:'连胜达人',desc:'连续正确5+次',unlocked:true});}
+  else if(S.maxConsecutive>=3){badges.push({icon:'\uD83D\uDD25',label:'小连胜',desc:'连续正确3+次',unlocked:true});}
+  else{badges.push({icon:'\uD83D\uDD25',label:'小连胜',desc:'连续正确3+次',unlocked:false});}
+  if(rate===100){hasAllCorrect=true;badges.push({icon:'\uD83D\uDC51',label:'全胜通关',desc:'全部鉴定正确',unlocked:true});}
+  else{badges.push({icon:'\uD83D\uDC51',label:'全胜通关',desc:'全部鉴定正确',unlocked:false});}
+
+  // 关卡回顾列表
+  var reviewHTML='';
+  for(var ri=0;ri<LEVELS.length;ri++){
+    var lv=LEVELS[ri];var col=S.collection[lv.herb];
+    var mark=col?(col.correctlyIdentified?'\u2705':'\u274C'):'\u2754';
+    var note=col?(col.correctlyIdentified?'鉴定正确':'鉴定错误'):'未解锁';
+    reviewHTML+='<div style=\"display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,0.5);border-radius:8px;margin-bottom:4px;font-size:13px\"><span>'+mark+' '+lv.herb+(lv.real?' (真)':' (假)')+'</span><span style=\"font-size:11px;color:#8E8E93\">'+note+'</span></div>';
+  }
+
+  var badgeHTML='';
+  for(var bi=0;bi<badges.length;bi++){var b=badges[bi];badgeHTML+='<div style=\"flex:1;min-width:70px;text-align:center;padding:8px 4px;border-radius:12px;background:'+(b.unlocked?'rgba(255,255,255,0.7)':'rgba(255,255,255,0.3)')+';'+(b.unlocked?'box-shadow:0 2px 8px rgba(0,0,0,0.06)':'opacity:0.45')+'\"><div style=\"font-size:24px;margin-bottom:2px\">'+b.icon+'</div><div style=\"font-size:10px;font-weight:600;color:'+(b.unlocked?'#1C1C1E':'#8E8E93')+'\">'+b.label+'</div><div style=\"font-size:9px;color:#8E8E93\">'+b.desc+'</div></div>';}
+
+  var html='<div style=\"padding:40px 16px 20px;text-align:center;max-width:380px;margin:0 auto\">';
+  // 头部
+  html+='<div style=\"font-size:40px;margin-bottom:4px\">\uD83C\uDFC6</div>';
+  html+='<div style=\"font-size:22px;font-weight:700;color:#1C1C1E;margin-bottom:16px\">鉴定之旅完成</div>';
+  // 评级圆圈
+  html+='<div style=\"display:inline-flex;flex-direction:column;align-items:center;margin-bottom:20px\">';
+  html+='<div style=\"width:100px;height:100px;border-radius:50%;background:conic-gradient('+ratingColor+' '+rate*3.6+'deg, #E8E8ED '+rate*3.6+'deg);display:flex;align-items:center;justify-content:center;position:relative\">';
+  html+='<div style=\"width:82px;height:82px;border-radius:50%;background:#FFF;display:flex;flex-direction:column;align-items:center;justify-content:center\">';
+  html+='<span style=\"font-size:28px;font-weight:700;color:'+ratingColor+'\">'+rate+'%</span>';
+  html+='<span style=\"font-size:10px;color:#8E8E93\">正确率</span></div></div>';
+  html+='<div style=\"margin-top:8px;font-size:14px;font-weight:600;color:'+ratingColor+'\">'+ratingEmoji+' '+rating+'</div></div>';
+  // 统计卡片
+  html+='<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px\">';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#1C1C1E\">'+tot+'</div><div style=\"font-size:10px;color:#8E8E93\">鉴定药材</div></div>';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#34C759\">'+ok+'</div><div style=\"font-size:10px;color:#8E8E93\">鉴定正确</div></div>';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#FF3B30\">'+ng+'</div><div style=\"font-size:10px;color:#8E8E93\">鉴定错误</div></div>';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#FF9500\">'+S.maxConsecutive+'</div><div style=\"font-size:10px;color:#8E8E93\">最高连胜</div></div></div>';
+  // 图鉴进度
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;margin-bottom:12px\"><div style=\"display:flex;justify-content:space-between;margin-bottom:6px\"><span style=\"font-size:12px;font-weight:600;color:#1C1C1E\">图鉴收集进度</span><span style=\"font-size:12px;color:#8E8E93\">'+clen+'/'+tot+'</span></div><div style=\"height:6px;background:#E8E8ED;border-radius:3px;overflow:hidden\"><div style=\"height:100%;width:'+(clen/tot*100)+'%;background:linear-gradient(90deg,#AF52DE,#5856D6);border-radius:3px;transition:width 0.5s ease\"></div></div></div>';
+  // 成就
+  html+='<div style=\"display:flex;gap:6px;margin-bottom:16px;overflow-x:auto\">'+badgeHTML+'</div>';
+  // 妈妈的评价
+  html+='<div style=\"font-size:13px;line-height:1.7;color:rgba(60,60,67,0.65);margin-bottom:16px;text-align:left;padding:12px;background:rgba(255,248,225,0.6);border-radius:10px\">'+momMsg+'</div>';
+  // 关卡回顾
+  html+='<div style=\"text-align:left;margin-bottom:16px\"><div style=\"font-size:12px;font-weight:600;color:#1C1C1E;margin-bottom:6px\">各关回顾</div>'+reviewHTML+'</div>';
+  // 按钮
+  html+='<div style=\"display:flex;gap:10px;justify-content:center\">';
+  html+='<button onclick=\"restart()\" style=\"height:44px;padding:0 28px;border:none;border-radius:22px;font-size:15px;font-weight:600;color:#FFF;background:linear-gradient(135deg,#007AFF,#0056CC);box-shadow:0 4px 12px rgba(0,122,255,0.3);cursor:pointer\">再来一次</button>';
+  html+='<button onclick=\"openCollection()\" style=\"height:44px;padding:0 28px;border:1.5px solid #007AFF;border-radius:22px;font-size:15px;font-weight:600;color:#007AFF;background:transparent;cursor:pointer\">查看图鉴</button>';
+  html+='</div></div>';
+
+  document.getElementById('chat-body').innerHTML=html;
+  document.getElementById('chat-judge').classList.remove('show');
+  document.getElementById('chat-clue-bar').style.display='none';
+  document.getElementById('dbadge-chat-red').style.display='none';
+  document.getElementById('dbadge-chat-green').style.display='none';
+  ['shua','tao','you','lin'].forEach(function(a){var d=document.getElementById('ddot-'+a);if(d)d.classList.remove('show');var dd=document.getElementById('dockdot-'+a);if(dd)dd.classList.remove('show')});
+}
+function restart(){
+  S={level:0,viewed:{shua:false,tao:false,you:false,lin:false},allDone:false,totalOK:0,totalNG:0,consecutiveOK:0,maxConsecutive:0,pulsePlayed:false,dotsRevealed:false,introState:0,deskHintShown:false,firstVisit:{chat:false,shua:false,tao:false,you:false,lin:false},lastRenderedLevel:-1,levelPassed:false,collection:{},newCollections:[],achieves:{}};
+  var desk=document.getElementById('desktop');if(desk){desk.style.transition='none';desk.style.opacity='1';desk.style.transform='scale(1)';requestAnimationFrame(function(){desk.style.transition=''})}
+  var dock=document.getElementById('dock-bar');if(dock){dock.classList.remove('dock-enter','dock-animated');dock.style.opacity='1';dock.style.transform=''}
+  goDesktop();updateDesktopIndicators();
+  document.getElementById('chat-judge').classList.remove('show');
+  document.getElementById('chat-clue-bar').style.display='none';
+  var jHint=document.getElementById('judge-hint');if(jHint)jHint.classList.remove('show');
+  startPulse();
+}
+
+
+// ============================================
+// 开场界面
+// ============================================
+function introClick(e){
+  if(S.introState===0){
+    S.introState=1;
+    document.getElementById('is-stage1').classList.remove('show');
+    var s2=document.getElementById('is-stage2');s2.classList.add('show');
+    // 文字逐行显示
+    var lines=[document.getElementById('is2-l1'),document.getElementById('is2-l2'),document.getElementById('is2-l3')];
+    var phone=document.getElementById('is2-phone'),btn=document.getElementById('is2-btn');
+    setTimeout(function(){lines[0].classList.add('visible')},300);
+    setTimeout(function(){lines[1].classList.add('visible')},800);
+    setTimeout(function(){lines[2].classList.add('visible')},1300);
+    setTimeout(function(){phone.classList.add('visible');btn.classList.add('visible');btn.classList.add('bounce-in')},1800);
+  }
+}
+function beginGame(){
+  S.introState=2;
+  AudioManager.startBGM();
+  var intro=document.getElementById('intro-screen');
+  intro.classList.add('hide');
+  setTimeout(function(){
+    intro.style.display='none';
+    var desk=document.getElementById('desktop');
+    desk.style.display='flex';desk.style.opacity='0';desk.style.transform='scale(0.98)';
+    requestAnimationFrame(function(){desk.style.opacity='1';desk.style.transform='scale(1)'});
+    // 底部导航栏上滑
+    var dock=document.getElementById('dock-bar');if(dock){dock.classList.remove('dock-enter','dock-animated');void dock.offsetWidth;dock.classList.add('dock-enter');requestAnimationFrame(function(){dock.classList.add('dock-animated')})}
+    // 桌面图标交错弹入
+    var icons=document.querySelectorAll('#desktop .desk-icon');
+    for(var ii=0;ii<icons.length;ii++){(function(j){icons[j].classList.remove('icon-enter','icon-animated');void icons[j].offsetWidth;icons[j].classList.add('icon-enter');setTimeout(function(){icons[j].classList.add('icon-animated');if(j===0){var dt=document.getElementById('desk-time');if(dt)dt.classList.add('desk-show');var dd=document.getElementById('desk-date');if(dd)dd.classList.add('desk-show')}},80+50*j)})(ii)}
+    startPulse();
+    setTimeout(function(){if(S.dotsRevealed)showDesktopHint()},800)
+  },500);
+}
+
+// ============================================
+// 初始化
+// ============================================
+function startPulse(){
+  if(S.pulsePlayed||S.level!==0)return;
+  S.pulsePlayed=true;
+  var icon=document.getElementById('dicon-chat');
+  if(icon){icon.classList.add('pulse');setTimeout(function(){icon.classList.remove('pulse')},6500)}
+}
+function showAppToast(app,msg){
+  var toast=document.getElementById('toast-'+app);
+  if(!toast||S.firstVisit[app])return;
+  S.firstVisit[app]=true;
+  toast.textContent=msg;toast.style.display='block';
+  requestAnimationFrame(function(){toast.classList.add('show')});
+  setTimeout(function(){toast.classList.remove('show');setTimeout(function(){toast.style.display='none'},300)},3000)
+}
+updTime();updDate();updateDesktopIndicators();
+// 从开场界面开始，桌面隐藏
+var deskEl=document.getElementById('desktop');if(deskEl)deskEl.style.display='none';
+setInterval(function(){updTime();updDate()},30000);
+
+// ============================================
+// 可点击卡片的事件委托
+// ============================================
+function setupCardClicks(){
+  var bodies={
+    'chat-body':handleChatCardClick,
+    'body-shua':handleShuaCardClick,
+    'body-tao':handleTaoCardClick,
+    'body-you':handleYouCardClick,
+    'body-lin':handleLinCardClick
+  };
+  for(var id in bodies){
+    (function(bid,handler){
+      var el=document.getElementById(bid);
+      if(!el||el._clickBound)return;
+      el._clickBound=true;
+      el.addEventListener('click',function(e){
+        var target=e.target;
+        var card=target.closest('.herb-card,.video-hero,.shop-item,.moment-card,.group-card,.video-card');
+        if(card)handler(card);
+      });
+    })(id,bodies[id]);
+  }
+}
+
+function handleChatCardClick(card){
+  if(!card.classList.contains('herb-card'))return;
+  var lv=Lv();if(!lv)return;
+  var content='<span class="dp-tag">药材详情</span>';
+  content+='<div class="dp-img">'+herbImg(lv.img,lv.herb)+'</div>';
+  content+='<h3>'+lv.cardTitle+'</h3>';
+  content+='<div class="dp-section">'+lv.cardDesc+'</div>';
+  content+='<div class="dp-section"><b>提示：</b>← 去桌面，进入 4 个 App 收集线索后再回来判断，综合判断这个药材的真假。</div>';
+  content+='<button class="dp-close" onclick="closeDetail()">知道了</button>';
+  showDetail(content);
+}
+
+function handleShuaCardClick(card){
+  if(card.classList.contains('video-hero')){
+    toggleVideo(card);
+    return;
+  }
+  var lv=Lv(),c=lv.shuaKan;if(!lv||!c)return;
+  var content='<span class="dp-tag">科普视频</span>';
+  content+='<h3>'+c.title+'</h3>';
+  content+='<div class="dp-section"><b>作者：</b>@'+c.author+'</div>';
+  content+='<div class="dp-section">'+c.desc+'</div>';
+  if(c.comments){
+    content+='<div class="dp-section"><b>热门评论：</b><br>';
+    for(var i=0;i<c.comments.length;i++){content+=c.comments[i].user+'：'+c.comments[i].text+'<br><br>'}
+    content+='</div>';
+  }
+  content+='<button class="dp-close" onclick="closeDetail()">关闭</button>';
+  showDetail(content);
+}
+
+function handleTaoCardClick(card){
+  var lv=Lv(),c=lv.taoShiHui;if(!lv||!c)return;
+  var content='<span class="dp-tag">商品详情</span>';
+  content+='<div class="dp-img">'+herbImg(lv.img,lv.herb)+'</div>';
+  content+='<h3>'+c.name+'</h3>';
+  content+='<div class="dp-section"><b>价格：</b>&yen;'+c.price+' <span style="text-decoration:line-through;color:#999">&yen;'+c.origPrice+'</span></div>';
+  content+='<div class="dp-section"><b>店铺：</b>'+c.shop+'</div>';
+  content+='<div class="dp-section"><b>用户评价：</b><br>';
+  for(var i=0;i<c.reviews.length;i++){content+='<span style="color:#FF6600">'+c.reviews[i].user+'</span>：'+c.reviews[i].text+'<br><br>'}
+  content+='</div>';
+  content+='<button class="dp-close" onclick="closeDetail()">关闭</button>';
+  showDetail(content);
+}
+
+function handleYouCardClick(card){
+  var lv=Lv(),c=lv.youQuan;if(!lv||!c)return;
+  var content='<span class="dp-tag">友圈动态</span>';
+  content+='<h3>'+c.user+'</h3>';
+  content+='<div class="dp-section">'+c.text+'</div>';
+  if(c.comments){
+    content+='<div class="dp-section"><b>评论：</b><br>';
+    for(var i=0;i<c.comments.length;i++){content+='<b>'+c.comments[i].user+'</b>：'+c.comments[i].text+'<br><br>'}
+    content+='</div>';
+  }
+  content+='<button class="dp-close" onclick="closeDetail()">关闭</button>';
+  showDetail(content);
+}
+
+function handleLinCardClick(card){
+  var lv=Lv(),c=lv.linJu;if(!lv||!c)return;
+  var content='<span class="dp-tag">团购详情</span>';
+  content+='<div class="dp-img">'+herbImg(lv.img,lv.herb)+'</div>';
+  content+='<h3>'+c.name+'</h3>';
+  content+='<div class="dp-section"><b>团购价：</b>&yen;'+c.price+' <span style="text-decoration:line-through;color:#999">&yen;'+c.origPrice+'</span></div>';
+  content+='<div class="dp-section"><b>已团：</b>'+c.joined+'份 &nbsp;|&nbsp; '+c.countdown+'</div>';
+  if(c.desc)content+='<div class="dp-section"><b>商品详情：</b>'+c.desc+'</div>';
+  content+='<div class="dp-section"><b>提示：</b>'+c.info+'</div>';
+  content+='<button class="dp-close" onclick="closeDetail()">关闭</button>';
+  showDetail(content);
+}
+
+function showDetail(html){
+  document.getElementById('detail-popup').innerHTML=html;
+  document.getElementById('detail-overlay').classList.add('show');
+}
+function closeDetail(){
+  document.getElementById('detail-overlay').classList.remove('show');
+}
+
+// ============================================
+// 视频播放器（基于 Canvas 的真实视频播放器）
+// ============================================
+var videoPlayer={
+  playing:false, currentTime:0, duration:15, animId:null, imgs:[], loaded:false,
+  // 视频场景 - 每个场景为 {type:'title'|'slide'|'tip', text, img?, duration}
+  scenes:[
+    {type:'title', text:'中药材鉴别指南', sub:'教你一眼识别真假药材', duration:2.5},
+    {type:'slide', img:'herb_人参.jpg', text:'野山参', sub:'芦头长·铁线纹·珍珠点', duration:2},
+    {type:'slide', img:'herb_灵芝.jpg', text:'野生赤芝', sub:'菌盖红褐·漆样光泽·背面象牙白', duration:2},
+    {type:'slide', img:'herb_三七.jpg', text:'文山三七', sub:'断面墨绿·菊花纹·苦后回甘', duration:2},
+    {type:'slide', img:'herb_冬虫夏草.jpg', text:'那曲虫草', sub:'虫体金黄·环纹清晰·菌香浓郁', duration:2},
+    {type:'slide', img:'herb_天麻.jpg', text:'野生天麻', sub:'鹦哥嘴·肚脐眼·角质断面', duration:2},
+    {type:'tip', text:'鉴别口诀', sub:'一看二闻三泡水\n真品特征对上了再下手', duration:2.5}
+  ],
+  init:function(){
+    var self=this;
+    self.playing=false;self.currentTime=0;self.loaded=false;
+    self.canvas=document.getElementById('video-canvas');
+    self.ctx=self.canvas?self.canvas.getContext('2d'):null;
+    self.playBtn=document.getElementById('v-play-btn');
+    self.progressFill=document.getElementById('v-progress-fill');
+    self.timeDisplay=document.getElementById('v-time');
+    // 预加载图片
+    self.imgs={};
+    var toLoad=self.scenes.filter(function(s){return s.img}).length;
+    if(toLoad===0){self.loaded=true;self.drawFrame(0);return}
+    var loaded=0;
+    self.scenes.forEach(function(s){
+      if(!s.img)return;
+      var img=new Image();
+      img.onload=function(){loaded++;if(loaded>=toLoad){self.loaded=true;self.drawFrame(0)}};
+      img.onerror=function(){loaded++;if(loaded>=toLoad){self.loaded=true;self.drawFrame(0)}};
+      img.src='herb_images/'+s.img;
+      self.imgs[s.img]=img;
+    });
+    if(self.canvas)self.drawFrame(0);
+  },
+  toggle:function(){
+    if(this.playing)this.pause();else this.play();
+  },
+  play:function(){
+    if(!this.loaded)return;
+    var self=this;
+    self.playing=true;
+    if(self.playBtn)self.playBtn.style.display='none';
+    var hero=document.getElementById('video-hero');
+    if(hero)hero.classList.add('playing');
+    var lastT=performance.now();
+    function loop(now){
+      if(!self.playing){self.animId=null;return}
+      var dt=(now-lastT)/1000;
+      lastT=now;
+      self.currentTime+=dt;
+      if(self.currentTime>=self.duration){self.currentTime=0}
+      self.drawFrame(self.currentTime);
+      self.animId=requestAnimationFrame(loop);
+    }
+    self.animId=requestAnimationFrame(loop);
+  },
+  pause:function(){
+    this.playing=false;
+    if(this.animId){cancelAnimationFrame(this.animId);this.animId=null}
+    if(this.playBtn)this.playBtn.style.display='flex';
+    var hero=document.getElementById('video-hero');
+    if(hero)hero.classList.remove('playing');
+  },
+  getScene:function(t){
+    var acc=0;
+    for(var i=0;i<this.scenes.length;i++){
+      acc+=this.scenes[i].duration;
+      if(t<acc)return {scene:this.scenes[i], progress:(t-(acc-this.scenes[i].duration))/this.scenes[i].duration, index:i};
+    }
+    return {scene:this.scenes[0], progress:0, index:0};
+  },
+  drawFrame:function(t){
+    var ctx=this.ctx, W=408, H=220;
+    if(!ctx)return;
+    ctx.clearRect(0,0,W,H);
+    var sd=this.getScene(t);
+    var s=sd.scene, p=sd.progress;
+    
+    // 背景
+    var bgGrad=ctx.createLinearGradient(0,0,0,H);
+    bgGrad.addColorStop(0,'#1a1a2e');bgGrad.addColorStop(0.5,'#16213e');bgGrad.addColorStop(1,'#0f3460');
+    ctx.fillStyle=bgGrad;ctx.fillRect(0,0,W,H);
+    
+    if(s.type==='title'){
+      // 标题卡片带动画
+      var alpha=Math.min(1,p*2)*Math.min(1,(1-p)*2);
+      ctx.globalAlpha=alpha;
+      ctx.fillStyle='#FFF';ctx.font='bold 32px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign='center';ctx.fillText(s.text,W/2,H/2-12);
+      ctx.font='16px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillText(s.sub,W/2,H/2+28);
+      ctx.globalAlpha=1;
+    }else if(s.type==='slide'){
+      // 图片幻灯片
+      var img=this.imgs[s.img];
+      var imgAlpha=Math.min(1,p*2)*Math.min(1,(1-p)*2);
+      if(img&&img.complete&&img.naturalWidth>0){
+        ctx.globalAlpha=imgAlpha;
+        // 居中缩放绘制图片
+        var iw=img.naturalWidth,ih=img.naturalHeight;
+        var scale=Math.min(W/iw,H/ih)*0.85;
+        var dw=iw*scale,dh=ih*scale;
+        var dx=(W-dw)/2,dy=(H-dh)/2-8;
+        ctx.drawImage(img,dx,dy,dw,dh);
+        ctx.globalAlpha=1;
+      }
+      // 底部文字叠加
+      var txtAlpha=Math.min(1,p*3)*Math.min(1,(1-p+0.3)*3);
+      ctx.globalAlpha=txtAlpha;
+      ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,H-56,W,56);
+      ctx.fillStyle='#FFF';ctx.font='bold 18px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign='left';ctx.fillText(s.text,20,H-30);
+      ctx.font='13px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fillText(s.sub,20,H-10);
+      ctx.globalAlpha=1;
+    }else if(s.type==='tip'){
+      // 提示卡片
+      var tipAlpha=Math.min(1,p*2)*Math.min(1,(1-p)*2);
+      ctx.globalAlpha=tipAlpha;
+      ctx.fillStyle='rgba(52,199,89,0.15)';
+      ctx.fillRect(W/2-140,H/2-55,280,110);
+      ctx.strokeStyle='rgba(52,199,89,0.4)';ctx.lineWidth=1;
+      ctx.strokeRect(W/2-140,H/2-55,280,110);
+      ctx.fillStyle='#34C759';ctx.font='bold 22px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign='center';ctx.fillText(s.text,W/2,H/2-18);
+      ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='14px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      var lines=s.sub.split('\n');
+      for(var li=0;li<lines.length;li++){ctx.fillText(lines[li],W/2,H/2+8+li*20)}
+      ctx.globalAlpha=1;
+    }
+    
+    // 更新进度条和时间
+    if(this.progressFill)this.progressFill.style.width=(t/this.duration*100)+'%';
+    if(this.timeDisplay){
+      var cm=Math.floor(t/60),cs=Math.floor(t%60);
+      var dm=Math.floor(this.duration/60),ds=Math.floor(this.duration%60);
+      this.timeDisplay.textContent=cm+':'+(cs<10?'0':'')+cs+'/'+dm+':'+(ds<10?'0':'')+ds;
+    }
+  }
+};
+
+// 保留旧版 toggleVideo 以兼容卡片点击处理
+function toggleVideo(hero){
+  videoPlayer.toggle();
+}
+
+// 初始化卡片点击处理
+document.addEventListener('DOMContentLoaded',function(){setupCardClicks()});
+setupCardClicks();
+
+
+// ============================================
+// 优化新增：图鉴、成就、闪光、增强结果
+// ============================================
+
+// --- 图鉴系统 ---
+function isCollected(herbName){return !!S.collection[herbName]}
+function addToCollectionSilent(herbName,isCorrect,levelData){
+  if(!S.collection[herbName]){
+    S.collection[herbName]={herb:herbName,img:levelData.img,keyClue:levelData.keyClue,date:new Date().toISOString(),level:levelData.id,correctlyIdentified:!!isCorrect};
+    S.newCollections.push(herbName);
+    AudioManager.sfx.achievement();
+  }
+}
+function openCollection(){
+  document.getElementById('collection-page').classList.add('show');
+  renderCollection();
+}
+function closeCollection(){
+  document.getElementById('collection-page').classList.remove('show');
+}
+function renderCollection(){
+  var n=LEVELS.length,coll=0,html='';
+  html+='<h4>已鉴定药材</h4><div class="collect-grid">';
+  for(var i=0;i<n;i++){
+    var h=LEVELS[i].herb,unlocked=!!S.collection[h];
+    if(unlocked)coll++;
+    html+='<div class="collect-item'+(unlocked?' unlocked':' locked')+'"'+(unlocked?' data-level-idx="'+i+'" style="cursor:pointer"':'')+'>';
+    html+='<div class="ci-img">'+(unlocked?'<img src="'+LEVELS[i].img+'" alt="'+h+'" onerror="this.parentElement.innerHTML=\'&nbsp;\'">':'<span>?</span>')+'</div>';
+    html+='<div class="ci-name">'+h+'</div>';
+    html+='<div class="ci-badge">'+(unlocked?'已收录 \u2713':'第'+(i+1)+'关解锁')+'</div>';
+    if(unlocked)html+='<div class="ci-star">\u2B50</div>';
+    html+='</div>';
+  }
+  html+='</div>';
+  document.getElementById('collect-body').innerHTML=html;
+  document.getElementById('cn-count').textContent=coll+'/'+n;
+  S.newCollections=[];updateCollectBtn();
+  var items=document.querySelectorAll('#collect-body .collect-item.unlocked');
+  for(var j=0;j<items.length;j++){
+    (function(el){
+      el.addEventListener('click',function(e){
+        e.stopPropagation();
+        var idx=parseInt(this.getAttribute('data-level-idx'));
+        var lv=LEVELS[idx];
+        var kcParts=lv.keyClue.split('\u2014\u2014');
+        var kcTitle=kcParts.length>1?kcParts[1]:'\u9274\u522B\u7279\u5F81';
+        var kcDetail=kcParts[0];
+        var content='<span class="dp-tag">\u836F\u6750\u56FE\u9274</span>';
+        content+='<div class="dp-img"><img src="'+lv.img+'" alt="'+lv.herb+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px"></div>';
+        content+='<h3>'+lv.cardTitle+'</h3>';
+        content+='<div class="dp-section">'+lv.cardDesc+'</div>';
+        content+='<div class="dp-section"><b>'+kcTitle+'\uFF1A</b>'+kcDetail+'</div>';
+        content+='<button class="dp-close" onclick="closeDetail()">\u5173\u95ED</button>';
+        showDetail(content);
+      });
+    })(items[j]);
+  }
+}
+function addToCollectionFromModal(){
+  var lv=Lv();if(!lv)return;
+  if(isCollected(lv.herb))return;
+  addToCollectionSilent(lv.herb,true,lv);
+  updateCollectBtn();
+  var btn=document.getElementById('rm-collect-btn');
+  if(btn){btn.textContent='\u2713 已收入图鉴';btn.classList.add('collected');btn.onclick=null;}
+  var ach=checkAchievements();
+  for(var i=0;i<ach.length;i++)showAchievementToast(ach[i]);
+}
+function updateCollectBtn(){
+  var btn=document.getElementById('desk-collect-btn'),cnt=Object.keys(S.collection).length;
+  if(cnt>0){btn.classList.add('show')}else{btn.classList.remove('show')}
+  var dot=document.getElementById('clct-dot');
+  if(S.newCollections.length>0){dot.classList.add('show')}else{dot.classList.remove('show')}
+}
+
+// --- 成就系统 ---
+function checkAchievements(){
+  var unlocked=[];
+  if(S.totalOK>=1&&!S.achieves.first_correct){S.achieves.first_correct=true;unlocked.push({icon:'\uD83C\uDFAF',title:'初露锋芒',desc:'首次正确鉴别药材'});}
+  if(S.consecutiveOK>=3&&!S.achieves.streak3){S.achieves.streak3=true;unlocked.push({icon:'\uD83D\uDD25',title:'三连胜',desc:'连续答对3题'});}
+  if(S.consecutiveOK>=5&&!S.achieves.streak5){S.achieves.streak5=true;unlocked.push({icon:'\u26A1',title:'五连胜',desc:'连续答对5题'});}
+  var clen=Object.keys(S.collection).length;
+  if(clen>=5&&!S.achieves.collect5){S.achieves.collect5=true;unlocked.push({icon:'\uD83D\uDCDA',title:'收藏家',desc:'图鉴收录5种药材'});}
+  if(clen>=LEVELS.length&&!S.achieves.collect_all){S.achieves.collect_all=true;unlocked.push({icon:'\uD83C\uDFC6',title:'本草纲目',desc:'图鉴收录全部药材'});}
+  if(S.level>=5&&S.totalNG===0&&S.totalOK>=5&&!S.achieves.perfect){S.achieves.perfect=true;unlocked.push({icon:'\uD83D\uDC8E',title:'火眼金睛',desc:'已答题目全部正确'});}
+  return unlocked;
+}
+function showAchievementToast(a){
+  var t=document.getElementById('achieve-toast');
+  document.getElementById('at-icon').textContent=a.icon;
+  document.getElementById('at-title').textContent=a.title;
+  document.getElementById('at-desc').textContent=a.desc;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show')},2500);
+}
+
+// --- 闪光特效 ---
+function spawnSparkles(x,y,color,count){
+  var c=document.getElementById('sparkle-container');
+  for(var i=0;i<count;i++){
+    var s=document.createElement('div');s.className='sparkle';
+    s.style.left=x+'px';s.style.top=y+'px';
+    s.style.background=color;
+    var angle=Math.random()*Math.PI*2,dist=40+Math.random()*60;
+    s.style.setProperty('--sx',Math.cos(angle)*dist+'px');
+    s.style.setProperty('--sy',Math.sin(angle)*dist+'px');
+    s.style.width=(4+Math.random()*6)+'px';s.style.height=(4+Math.random()*6)+'px';
+    c.appendChild(s);
+    setTimeout(function(){if(s.parentNode)s.remove()},900);
+  }
+}
+
+// --- 进度与关卡导航 ---
+function updateProgressBar(){
+  var pw=document.getElementById('desk-progress-wrap');
+  if(S.level>0&&S.level<LEVELS.length){
+    pw.classList.add('show');
+    var pct=S.level/LEVELS.length*100;
+    document.getElementById('desk-progress-fill').style.width=pct+'%';
+    document.getElementById('dpl-current').textContent='第'+S.level+'关 / 共'+LEVELS.length+'关';
+    document.getElementById('dpl-streak').textContent=S.consecutiveOK>0?'连续正确 '+S.consecutiveOK+' 次':'';
+  }else{pw.classList.remove('show')}
+}
+function updateLevelNav(){
+  var nav=document.getElementById('desk-level-nav');
+  if(S.level>0&&S.level<LEVELS.length){
+    nav.classList.add('show');
+    var h='';
+    for(var i=0;i<LEVELS.length;i++){
+      var cls='locked',inner=''+(i+1);
+      if(i<S.level){cls='done';inner=''}
+      else if(i===S.level){cls='current'}
+      if(i>0)h+='<div class="lvl-line"></div>';
+      h+='<div class="lvl-dot-small '+cls+'">'+inner+'</div>';
+    }
+    nav.innerHTML=h;
+  }else{nav.classList.remove('show')}
+}
+
+// --- 桌面提示 ---
+function showDesktopHint(){
+  var h=document.getElementById('desk-hint');
+  if(!S.deskHintShown&&S.dotsRevealed){
+    h.classList.add('show');
+    S.deskHintShown=true;
+    setTimeout(function(){h.classList.remove('show')},8000);
+  }
+}
+
+// --- 增强结果弹窗 ---
+function showResultEnhanced(isCorrect){
+  var lv=Lv();if(!lv)return;
+  var modal=document.getElementById('result-modal');
+  var icon=document.getElementById('rm-icon');
+  var title=document.getElementById('rm-title');
+  var score=document.getElementById('rm-score');
+  var streak=document.getElementById('rm-streak');
+  var keyclue=document.getElementById('rm-keyclue');
+  var evidence=document.getElementById('rm-evidence');
+  var msg=document.getElementById('rm-msg');
+  var nextBtn=document.getElementById('rm-next-btn');
+  var collectBtn=document.getElementById('rm-collect-btn');
+
+  icon.textContent=isCorrect?'\u2705':'\u274C';
+  title.textContent=isCorrect?'\u2705 鉴别正确！':'\u274C 鉴别失败';
+  title.style.color=isCorrect?'#34C759':'#FF3B30';
+  score.textContent='得分：'+S.totalOK+'/10（正确）';
+
+  if(S.consecutiveOK>=2){
+    streak.classList.add('show');
+    streak.textContent='\uD83D\uDD25 连续正确 '+S.consecutiveOK+' 次！';
+  }else{streak.classList.remove('show')}
+
+  keyclue.innerHTML='<b>鉴别关键：</b>'+lv.keyClue;
+
+  // 证据拆解
+  var evs=lv.evidence||[];
+  if(evs.length>0){
+    evidence.style.display='block';
+    var evHtml='<div class="mce-title">各渠道线索对比</div>';
+    for(var i=0;i<evs.length;i++){
+      var e=evs[i],cls='';
+      if(e.type==='good')cls=' good';
+      else if(e.type==='warn')cls=' warn';
+      else cls=' neutral';
+      evHtml+='<div class="mce-row"><span class="mce-app'+cls+'">'+e.app+'</span><span>'+e.text+'</span></div>';
+    }
+    evidence.innerHTML=evHtml;
+  }else{evidence.style.display='none'}
+
+  if(isCorrect){
+    msg.textContent='真厉害！你已经掌握了鉴别技巧，继续保持！';
+  }else{
+    msg.textContent='别气馁，再接再厉！仔细看看关键线索，下次一定能对。';
+  }
+
+  if(S.level<LEVELS.length-1){
+    nextBtn.textContent='下一关 \u2192';nextBtn.style.display='inline-block';
+  }else{
+    nextBtn.textContent='查看结果';nextBtn.style.display='inline-block';
+  }
+
+  // 图鉴按钮
+  collectBtn.classList.remove('collected');
+  collectBtn.onclick=function(e){e.stopPropagation();addToCollectionFromModal();};
+  if(isCorrect&&!isCollected(lv.herb)){
+    collectBtn.style.display='inline-block';
+    collectBtn.textContent='\uD83D\uDCD6 收入图鉴';
+  }else if(isCollected(lv.herb)){
+    collectBtn.style.display='inline-block';
+    collectBtn.textContent='\u2713 已收入图鉴';
+    collectBtn.classList.add('collected');
+    collectBtn.onclick=null;
+  }else{
+    collectBtn.style.display='none';
+  }
+
+  modal.classList.add('show');
+
+  // 正确时闪光
+  if(isCorrect){
+    setTimeout(function(){
+      var rect=modal.querySelector('.modal-card');
+      if(rect){
+        rect=rect.getBoundingClientRect();
+        spawnSparkles(rect.left+rect.width/2,rect.top+80,'#34C759',24);
+      }
+    },300);
+  }
+}
+
+// ============================================
+// 覆盖：判断
+// ============================================
+var _original_judge = judge;
+judge = function(result){
+  var lv=Lv();if(!lv)return false;
+  var isCorrect=(result===lv.real);
+  if(isCorrect){S.totalOK++;S.consecutiveOK++;if(S.consecutiveOK>S.maxConsecutive)S.maxConsecutive=S.consecutiveOK;AudioManager.sfx.correct()}
+  else{S.totalNG++;S.consecutiveOK=0;AudioManager.sfx.wrong()}
+  S.levelPassed=true;S.lastJudgmentCorrect=isCorrect;
+
+  addToCollectionSilent(lv.herb,isCorrect,lv);updateCollectBtn();
+
+  var ach=checkAchievements();
+  for(var i=0;i<ach.length;i++){setTimeout((function(a){return function(){showAchievementToast(a)}})(ach[i]),i*2800);}
+
+  var judgeEl=document.getElementById('chat-judge');if(judgeEl)judgeEl.classList.remove('show');
+  var jHint=document.getElementById('judge-hint');if(jHint)jHint.classList.remove('show');
+
+  // 显示聊天摘要
+  var body=document.getElementById('chat-body');
+  body.innerHTML='<div style="text-align:center;padding:40px 16px;opacity:0;transition:opacity 0.5s ease" id="chat-summary">'+
+    '<div style="font-size:48px;margin-bottom:12px">'+(isCorrect?'\u2705':'\u274C')+'</div>'+
+    '<div style="font-size:18px;font-weight:700;color:'+(isCorrect?'#34C759':'#FF3B30')+';margin-bottom:8px">'+(isCorrect?'鉴别正确！':'鉴别失败')+'</div>'+
+    '<div style="font-size:14px;color:#8E8E93;margin-bottom:16px">'+lv.herb+' - '+(lv.real?'真品':'假货')+'</div>'+
+    '<div style="max-width:300px;margin:0 auto">'+
+    '<div style="background:'+(isCorrect?'rgba(52,199,89,0.08)':'rgba(255,59,48,0.08)')+';border-radius:12px;padding:16px;text-align:left;font-size:13px;line-height:1.7;color:#1C1C1E">'+
+    '<b>鉴别关键：</b>'+lv.keyClue+'</div></div></div>';
+  setTimeout(function(){var s=document.getElementById('chat-summary');if(s)s.style.opacity='1'},100);
+
+  updateDesktopIndicators();
+  setTimeout(function(){showResultEnhanced(isCorrect)},1200);
+  return isCorrect;
+};
+
+// ============================================
+// 覆盖：下一关
+// ============================================
+var _original_nextLevel = nextLevel;
+nextLevel = function(){
+  AudioManager.sfx.buttonClick();
+  document.getElementById('result-modal').classList.remove('show');
+  if(S.level>=LEVELS.length-1){
+    S.level=LEVELS.length;
+    showEnd();
+    return;
+  }
+  S.level++;
+  S.viewed={shua:false,tao:false,you:false,lin:false};
+  S.allDone=false;S.levelPassed=false;S.lastRenderedLevel=-1;
+  S.firstVisit={chat:false,shua:false,tao:false,you:false,lin:false};S.deskHintShown=false;
+  if(S.level>0)S.dotsRevealed=true;
+  updateDesktopIndicators();
+  goDesktop();
+};
+
+// ============================================
+// 覆盖：显示结束
+// ============================================
+var _original_showEnd = showEnd;
+showEnd = function(){
+  AudioManager.sfx.victory();
+  var tot=LEVELS.length,ok=S.totalOK,ng=S.totalNG,rate=Math.round(ok/tot*100);
+  var clen=Object.keys(S.collection).length;
+  var rating,ratingColor,ratingEmoji;
+  if(rate>=90){rating='\u706B\u773C\u91D1\u775B';ratingColor='#FF9500';ratingEmoji='\uD83D\uDC41\uFE0F';}
+  else if(rate>=70){rating='\u660E\u5BDF\u79CB\u6BEB';ratingColor='#34C759';ratingEmoji='\u2B50';}
+  else if(rate>=50){rating='\u5C1A\u9700\u78E8\u7EC3';ratingColor='#007AFF';ratingEmoji='\uD83D\uDEE1\uFE0F';}
+  else{rating='\u4EFB\u91CD\u9053\u8FDC';ratingColor='#FF3B30';ratingEmoji='\uD83C\uDF31';}
+
+  var momMsg='';
+  if(rate>=90) momMsg='\u5988\u5988\u5F7B\u5E95\u9192\u609F\u4E86\uFF1A"\u8FD9\u4E9B\u517B\u751F\u7FA4\u91CC\u7684\u5356\u5BB6\uFF0C\u6CA1\u51E0\u4E2A\u9760\u8C31\u7684\u3002\u4EE5\u540E\u4E70\u836F\u6750\uFF0C\u6211\u5F97\u5148\u53BB\u6B63\u89C4\u836F\u5E97\uFF01"<br>\u5979\u5220\u6389\u4E86\u597D\u51E0\u4E2A\u517B\u751F\u63A8\u9500\u7FA4\u3002';
+  else if(rate>=70) momMsg='\u5988\u5988\u53D8\u5F97\u8C28\u614E\u4E86\u5F88\u591A\uFF1A"\u770B\u6765\u4E0D\u80FD\u968F\u4FBF\u76F8\u4FE1\u7FA4\u91CC\u7684\u63A8\u9500\u3002\u4E0D\u8FC7\u6709\u4E9B\u771F\u836F\u6750\u8FD8\u662F\u53EF\u4EE5\u4E70\u7684\u2026\u2026"<br>\u5979\u5F00\u59CB\u5B66\u7740\u5728\u4E70\u4E4B\u524D\u5148\u67E5\u8D44\u6599\u3002';
+  else if(rate>=50) momMsg='\u5988\u5988\u534A\u4FE1\u534A\u7591\uFF1A"\u6709\u7684\u771F\u7684\u6709\u7684\u5047\u7684\uFF0C\u6211\u4E5F\u5206\u4E0D\u592A\u6E05\u3002\u4EE5\u540E\u8FD8\u662F\u5C11\u4E70\u5427\u2026\u2026"<br>\u5979\u51CF\u5C11\u4E86\u8D2D\u4E70\u9891\u7387\uFF0C\u4F46\u5076\u5C14\u8FD8\u662F\u4F1A\u5FCD\u4E0D\u4F4F\u4E0B\u624B\u3002';
+  else momMsg='\u5988\u5988\u53F9\u7740\u6C14\uFF1A"\u73B0\u5728\u7684\u5047\u836F\u6750\u592A\u591A\u4E86\u2026\u2026"<br>\u5979\u4F9D\u7136\u6D3B\u8DC3\u5728\u5404\u4E2A\u517B\u751F\u7FA4\u91CC\uFF0C\u7EE7\u7EED\u4E70\u5404\u79CD"\u795E\u836F"\u3002';
+
+  // 徽章
+  var badges=[];
+  if(clen>=8)badges.push({icon:'\uD83D\uDCC1',label:'\u6536\u85CF\u5927\u5E08',desc:'\u56FE\u9274\u6536\u96C68+\u79CD',unlocked:true});
+  else if(clen>=5)badges.push({icon:'\uD83D\uDCC1',label:'\u6536\u85CF\u8FBE\u4EBA',desc:'\u56FE\u9274\u6536\u96C65+\u79CD',unlocked:true});
+  else{badges.push({icon:'\uD83D\uDCC1',label:'\u6536\u85CF\u65B0\u79C0',desc:'\u56FE\u9274\u6536\u96C65+\u79CD',unlocked:false});}
+  if(rate>=90)badges.push({icon:'\uD83C\uDFAF',label:'\u767E\u53D1\u767E\u4E2D',desc:'\u6B63\u786E\u738790%+',unlocked:true});
+  else if(rate>=80)badges.push({icon:'\uD83C\uDFAF',label:'\u795E\u5C04\u624B',desc:'\u6B63\u786E\u738080%+',unlocked:true});
+  else{badges.push({icon:'\uD83C\uDFAF',label:'\u795E\u5C04\u624B',desc:'\u6B63\u786E\u738080%+',unlocked:false});}
+  if(S.maxConsecutive>=5)badges.push({icon:'\uD83D\uDD25',label:'\u8FDE\u80DC\u8FBE\u4EBA',desc:'\u8FDE\u7EED\u6B63\u786E5+\u6B21',unlocked:true});
+  else if(S.maxConsecutive>=3)badges.push({icon:'\uD83D\uDD25',label:'\u5C0F\u8FDE\u80DC',desc:'\u8FDE\u7EED\u6B63\u786E3+\u6B21',unlocked:true});
+  else{badges.push({icon:'\uD83D\uDD25',label:'\u5C0F\u8FDE\u80DC',desc:'\u8FDE\u7EED\u6B63\u786E3+\u6B21',unlocked:false});}
+  if(rate===100)badges.push({icon:'\uD83D\uDC51',label:'\u5168\u80DC\u901A\u5173',desc:'\u5168\u90E8\u9274\u5B9A\u6B63\u786E',unlocked:true});
+  else{badges.push({icon:'\uD83D\uDC51',label:'\u5168\u80DC\u901A\u5173',desc:'\u5168\u90E8\u9274\u5B9A\u6B63\u786E',unlocked:false});}
+
+  // 关卡回顾
+  var reviewHTML='';
+  for(var ri=0;ri<LEVELS.length;ri++){
+    var lv=LEVELS[ri];var col=S.collection[lv.herb];
+    var mark=col?(col.correctlyIdentified?'\u2705':'\u274C'):'\u2754';
+    var note=col?(col.correctlyIdentified?'\u9274\u5B9A\u6B63\u786E':'\u9274\u5B9A\u9519\u8BEF'):'\u672A\u89E3\u9501';
+    reviewHTML+='<div style=\"display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,0.5);border-radius:8px;margin-bottom:4px;font-size:13px\"><span>'+mark+' '+lv.herb+(lv.real?' (\u771F)':' (\u5047)')+'</span><span style=\"font-size:11px;color:#8E8E93\">'+note+'</span></div>';
+  }
+
+  var badgeHTML='';
+  for(var bi=0;bi<badges.length;bi++){var b=badges[bi];badgeHTML+='<div style=\"flex:1;min-width:70px;text-align:center;padding:8px 4px;border-radius:12px;background:'+(b.unlocked?'rgba(255,255,255,0.7)':'rgba(255,255,255,0.3)')+';'+(b.unlocked?'box-shadow:0 2px 8px rgba(0,0,0,0.06)':'opacity:0.45')+'\"><div style=\"font-size:24px;margin-bottom:2px\">'+b.icon+'</div><div style=\"font-size:10px;font-weight:600;color:'+(b.unlocked?'#1C1C1E':'#8E8E93')+'\">'+b.label+'</div><div style=\"font-size:9px;color:#8E8E93\">'+b.desc+'</div></div>';}
+
+  var html='<div style=\"padding:40px 16px 20px;text-align:center;max-width:380px;margin:0 auto\">';
+  html+='<div style=\"font-size:40px;margin-bottom:4px\">\uD83C\uDFC6</div>';
+  html+='<div style=\"font-size:22px;font-weight:700;color:#1C1C1E;margin-bottom:16px\">\u9274\u5B9A\u4E4B\u65C5\u5B8C\u6210</div>';
+  html+='<div style=\"display:inline-flex;flex-direction:column;align-items:center;margin-bottom:20px\">';
+  html+='<div style=\"width:100px;height:100px;border-radius:50%;background:conic-gradient('+ratingColor+' '+rate*3.6+'deg, #E8E8ED '+rate*3.6+'deg);display:flex;align-items:center;justify-content:center;position:relative\">';
+  html+='<div style=\"width:82px;height:82px;border-radius:50%;background:#FFF;display:flex;flex-direction:column;align-items:center;justify-content:center\">';
+  html+='<span style=\"font-size:28px;font-weight:700;color:'+ratingColor+'\">'+rate+'%</span>';
+  html+='<span style=\"font-size:10px;color:#8E8E93\">\u6B63\u786E\u7387</span></div></div>';
+  html+='<div style=\"margin-top:8px;font-size:14px;font-weight:600;color:'+ratingColor+'\">'+ratingEmoji+' '+rating+'</div></div>';
+  html+='<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px\">';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#1C1C1E\">'+tot+'</div><div style=\"font-size:10px;color:#8E8E93\">\u9274\u5B9A\u836F\u6750</div></div>';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#34C759\">'+ok+'</div><div style=\"font-size:10px;color:#8E8E93\">\u9274\u5B9A\u6B63\u786E</div></div>';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#FF3B30\">'+ng+'</div><div style=\"font-size:10px;color:#8E8E93\">\u9274\u5B9A\u9519\u8BEF</div></div>';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:#FF9500\">'+S.maxConsecutive+'</div><div style=\"font-size:10px;color:#8E8E93\">\u6700\u9AD8\u8FDE\u80DC</div></div></div>';
+  html+='<div style=\"background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;margin-bottom:12px\"><div style=\"display:flex;justify-content:space-between;margin-bottom:6px\"><span style=\"font-size:12px;font-weight:600;color:#1C1C1E\">\u56FE\u9274\u6536\u96C6\u8FDB\u5EA6</span><span style=\"font-size:12px;color:#8E8E93\">'+clen+'/'+tot+'</span></div><div style=\"height:6px;background:#E8E8ED;border-radius:3px;overflow:hidden\"><div style=\"height:100%;width:'+(clen/tot*100)+'%;background:linear-gradient(90deg,#AF52DE,#5856D6);border-radius:3px;transition:width 0.5s ease\"></div></div></div>';
+  html+='<div style=\"display:flex;gap:6px;margin-bottom:16px;overflow-x:auto\">'+badgeHTML+'</div>';
+  html+='<div style=\"font-size:13px;line-height:1.7;color:rgba(60,60,67,0.65);margin-bottom:16px;text-align:left;padding:12px;background:rgba(255,248,225,0.6);border-radius:10px\">'+momMsg+'</div>';
+  html+='<div style=\"text-align:left;margin-bottom:16px\"><div style=\"font-size:12px;font-weight:600;color:#1C1C1E;margin-bottom:6px\">\u5404\u5173\u56DE\u987E</div>'+reviewHTML+'</div>';
+  html+='<div style=\"display:flex;gap:10px;justify-content:center\">';
+  html+='<button onclick=\"restart()\" style=\"height:44px;padding:0 28px;border:none;border-radius:22px;font-size:15px;font-weight:600;color:#FFF;background:linear-gradient(135deg,#007AFF,#0056CC);box-shadow:0 4px 12px rgba(0,122,255,0.3);cursor:pointer\">\u518D\u6765\u4E00\u6B21</button>';
+  html+='<button onclick=\"openCollection()\" style=\"height:44px;padding:0 28px;border:1.5px solid #007AFF;border-radius:22px;font-size:15px;font-weight:600;color:#007AFF;background:transparent;cursor:pointer\">\u67E5\u770B\u56FE\u9274</button>';
+  html+='</div></div>';
+
+  document.getElementById('chat-body').innerHTML=html;
+  document.getElementById('chat-judge').classList.remove('show');
+  document.getElementById('chat-clue-bar').style.display='none';
+  document.getElementById('dbadge-chat-red').style.display='none';
+  document.getElementById('dbadge-chat-green').style.display='none';
+  ['shua','tao','you','lin'].forEach(function(a){var d=document.getElementById('ddot-'+a);if(d)d.classList.remove('show');var dd=document.getElementById('dockdot-'+a);if(dd)dd.classList.remove('show')});
+};
+
+
+// 更新 updateDesktopIndicators 同时调用新函数
+var _original_updateDesktopIndicators = updateDesktopIndicators;
+updateDesktopIndicators = function(){
+  _original_updateDesktopIndicators();
+  updateProgressBar();
+  updateLevelNav();
+  updateCollectBtn();
+  if(S.dotsRevealed)showDesktopHint();
+};
+
+console.log('[Optimized] All systems ready');
+
+</script>
+
+<!-- 闪光粒子容器 -->
+<div class="sparkle-container" id="sparkle-container"></div>
+</body>
+</html>
